@@ -3,8 +3,8 @@
 
 import pandas as pd
 import numpy as np
-from .moment import LossMoment
-from .moment import _GROUP_ID, _LABEL, _LOSS, _PREDICTION, _ALL
+from fairlearn.reductions._moments.moment import LossMoment
+from fairlearn.reductions._moments.moment import _GROUP_ID, _LABEL, _LOSS, _PREDICTION, _ALL
 from fairlearn._input_validation import _KW_SENSITIVE_FEATURES
 
 

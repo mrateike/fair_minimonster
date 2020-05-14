@@ -16,7 +16,7 @@ import argparse
 # batch = args.batch
 
 # without args
-T1 = 10
+T1 = 100
 T2 = 1
 TT = 10
 fairness = 'DP'

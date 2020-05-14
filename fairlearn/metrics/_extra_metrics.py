@@ -108,9 +108,7 @@ def test_statistics(y_test, a_test):
 
 
 def utility(y_true, y_pred, sample_weight=None):
-    print('utility: y_pred', y_pred)
-    print('utility: y_true', y_true)
-    # pred_mean = y_pred.mean(axis=0)
+    pred_mean = y_pred.mean(axis=0)
     # print('pred_mean', pred_mean)
     proby1 = len(y_true[y_true.values == 1]) / len(y_true)
     # print('proby1', proby1)

@@ -154,11 +154,15 @@ class MiniMonster(object):
         # plt.show()
 
         accuracy = self.statistics.acc_list_overall
+        mean_pred = self.statistics.mean_pred_overall_list
+        util = self.statistics.util_list
         DP = self.statistics.DP_list
-        #acc_dict = {0: self.statistics.acc_list_0, 1: acc.loc[1], 'overall': auc.loc['overall']}
-        # self.mean_pred_dict[self.t] = {0: mean_pred.loc[0], 1: mean_pred.loc[1], 'overall': mean_pred.loc['overall']}
-
-        data = {'ACC':accuracy, 'DP':DP, }
+        TPR = self.statistics.TPR_list
+        EO = self.statistics.EO_list
+        acc_dict = {0: self.statistics.acc_list_0, 1: self.statistics.acc_list_1, 'overall': self.statistics.acc_list_overall}
+        pred_dict = {0: self.statistics.mean_pred_0_list, 1: self.statistics.mean_pred_1_list, 'overall': self.statistics.mean_pred_overall_list}
+        print('utility', util)
+        data = {'ACC':acc_dict, 'mean_pred': pred_dict, 'Utility' : util, 'DP':DP, 'TPR':TPR, 'EO':EO}
 
         base_save_path = Path.cwd() / 'save'
         Path(base_save_path).mkdir(parents=True, exist_ok=True)

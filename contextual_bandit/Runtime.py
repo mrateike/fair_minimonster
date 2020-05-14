@@ -34,7 +34,7 @@ def play(T1, T2, TT, fairness, batch, eps, nu):
     B = Simulators.DatasetBandit(shifts)
 
     dataset1 = B.get_new_context_set(T1)
-
+    print('Hello')
     # for AMO
     # learning_alg = lambda: sklearn.linear_model.LogisticRegression(solver='liblinear', fit_intercept=True)
     # M = MiniMonster(B, learning_alg=learning_alg, fairness)
@@ -47,7 +47,7 @@ def play(T1, T2, TT, fairness, batch, eps, nu):
     l1, l2, Q, best_pi = M.fit(T2, batch)
     stop = time.time()
     training_time = np.array([stop - start])
-
+    print('L_t', l1)
 
     ser_M = Evaluation.serialize_value(M)
     base_save_path = Path.cwd() / 'save'
