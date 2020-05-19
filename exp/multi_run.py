@@ -67,7 +67,7 @@ def _build_submit_file(args, base_path):
         file.write("# FOLDER SELECTION                                                        #\n")
         file.write("# ----------------------------------------------------------------------- #\n\n")
         file.write("environment = \"PYTHONUNBUFFERED=TRUE\"\n")
-        file.write("executable = {}\n\n".format(args.python_path))
+        file.write("executable = /home/mrateike/miniconda3/envs/fairlearn_original/bin/python\n\n")
         file.write("error = {}/error/experiment.$(Process).err\n".format(base_path))
         file.write("output = {}/output/experiment.$(Process).out\n".format(base_path))
         file.write("log = {}/log/experiment.$(Process).log\n".format(base_path))
