@@ -1,5 +1,5 @@
-from fairlearn.reductions._exponentiated_gradient.run_expg import RunExpg
-from fairlearn.reductions._moments.conditional_selection_rate import DemographicParity
+from src.fairlearn.reductions._exponentiated_gradient import RunExpg
+from src.fairlearn.reductions import DemographicParity
 import numpy as np
 n1_train = 100
 n2_train = 16000
