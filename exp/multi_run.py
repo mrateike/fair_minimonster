@@ -79,7 +79,7 @@ def _build_submit_file(args, base_path):
             for time_steps_2 in args.time_steps_2:
                 for nu in args.nu:
                     for eps in args.eps:
-                            command = "run.py " \
+                            command = "exp/run.py " \
                                       "-T1 {} " \
                                       "-T2 {} " \
                                       "-TT{} " \
@@ -87,7 +87,7 @@ def _build_submit_file(args, base_path):
                                       "-bt {}" \
                                       "-eps {} " \
                                       "-nu {} " \
-                                      "-p {}" \
+                                      "-d {}" \
                                       "{} " \
                                       "{}".format(time_steps_1,
                                                   time_steps_2,
@@ -127,10 +127,9 @@ def _multi_run(args, base_path):
                                    "-TT", str(args.time_steps_testing),
                                    "-f", str(args.fairness_type),
                                    "-bt", str(args.batch_type),
-                                   "-e", str(eps),
+                                   "-eps", str(eps),
                                    "-nu", str(nu),
-                                   "-d", str(args.data),
-                                   "-p", str(base_path)
+                                   "-d", str(args.data)
                                    ]
                         if args.plot:
                             command.append("--plot")
