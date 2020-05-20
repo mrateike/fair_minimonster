@@ -122,9 +122,9 @@ def _multi_run(args, base_path):
                 for nu in args.nu:
                     for eps in args.eps:
                         command = ["python3", "exp/run.py",
-                                   "-t1", str(time_steps_1),
-                                   "-t2", str(time_steps_2),
-                                   "-tt", str(args.time_steps_testing),
+                                   "-T1", str(time_steps_1),
+                                   "-T2", str(time_steps_2),
+                                   "-TT", str(args.time_steps_testing),
                                    "-f", str(args.fairness_type),
                                    "-bt", str(args.batch_type),
                                    "-e", str(eps),
