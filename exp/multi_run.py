@@ -121,7 +121,7 @@ def _multi_run(args, base_path):
             for time_steps_2 in args.time_steps_2:
                 for nu in args.nu:
                     for eps in args.eps:
-                        command = ["python3", "run.py",
+                        command = ["python3", "exp/run.py",
                                    "-t1", str(time_steps_1),
                                    "-t2", str(time_steps_2),
                                    "-tt", str(args.time_steps_testing),
@@ -182,7 +182,7 @@ if __name__ == "__main__":
 
     # Build script parameters
     parser.add_argument('--build_submit', required=False, action='store_true')
-    parser.add_argument('-pp', '--python_path', type=str, required=False, help="path of the python executable")
+    # parser.add_argument('-pp', '--python_path', type=str, required=False, help="path of the python executable")
     parser.add_argument('-q', '--queue_num', type=int, required=False,
                         help="the number of process that should be queued")
     parser.add_argument('--ram', type=int, required=False, help='the RAM requested (default = 6144)', default=6144)
@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
 
 
-    if args.build_submit and args.python_path is None:
+    if args.build_submit is None:
         parser.error('when using --build_submit, --python_path has to be specified')
 
    # optional: define parser errors
