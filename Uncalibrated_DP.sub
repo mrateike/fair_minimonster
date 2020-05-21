@@ -31,9 +31,5 @@ log = None/Uncalibrated/log/experiment.$(Process).log
 # QUEUE                                                                   #
 # ----------------------------------------------------------------------- #
 
-arguments = run.py -T1 5000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -d UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 10000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -d UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 15000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -d UncalibratedNone/Uncalibrated/results  
+arguments = exp/run.py -T1 5000 -T2 50000 -TT 10000 -f DP -bt lin -bs 100 -eps 0.01 -nu 1e-06 -d Uncalibrated   
 queue 

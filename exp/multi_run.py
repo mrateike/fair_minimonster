@@ -85,20 +85,20 @@ def _build_submit_file(args, base_path):
                                       "-TT {} " \
                                       "-f {} " \
                                       "-bt {} " \
+                                      "-bs {} " \
                                       "-eps {} " \
                                       "-nu {} " \
                                       "-d {} " \
                                       "{} " \
-                                      "{} "\
                                       "{} ".format(time_steps_1,
                                                   time_steps_2,
                                                   args.time_steps_testing,
                                                   args.fairness_type,
                                                   args.batch_type,
+                                                  args.batch_size,
                                                   eps,
                                                   nu,
                                                   args.data,
-                                                  "{}/results ".format(base_path),
                                                   "--plot " if args.plot else "",
                                                   "-pid $(Process)" if args.queue_num else "")
 
@@ -128,6 +128,7 @@ def _multi_run(args, base_path):
                                    "-TT", str(args.time_steps_testing),
                                    "-f", str(args.fairness_type),
                                    "-bt", str(args.batch_type),
+                                   "-bs", str(args.batch_size),
                                    "-eps", str(eps),
                                    "-nu", str(nu),
                                    "-d", str(args.data)
@@ -166,6 +167,8 @@ if __name__ == "__main__":
                              "if none is selected no fairness criterion is applied")
     parser.add_argument('-bt', '--batch_type', type=str, required=True,
                         help='batches type used (exp, lin)')
+    parser.add_argument('-bs', '--batch_size', type=str, required=True,
+                        help='batches size used for lin (required)')
     parser.add_argument('-eps', '--eps', type=float, nargs='+', required=True,
                         help="list of statistical unfairness paramenters to be used")
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,

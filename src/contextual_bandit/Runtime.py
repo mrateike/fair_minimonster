@@ -17,7 +17,10 @@ import numpy as np
 
 # class Runtime(object):
 
-def play(T1, T2, TT, fairness, batch, eps, nu, dataset):
+def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
+
+
+
     statistics1 = Evaluation()
     statistics2 = Evaluation()
     # # shifts = True (DP), shifts = False (TPR, EOdds)
@@ -40,7 +43,7 @@ def play(T1, T2, TT, fairness, batch, eps, nu, dataset):
     start = time.time()
 
     # input fairness
-    l1, l2, Q, best_pi = M.fit(T2, batch)
+    l1, l2, Q, best_pi = M.fit(T2, batch, batchsize)
     stop = time.time()
     training_time = np.array([stop - start])
     print('L_t', l1)

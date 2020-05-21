@@ -28,7 +28,9 @@ if __name__ == "__main__":
                         help="select the type of fairness (DP, FPR)"
                              "if none is selected no fairness criterion is applied")
     parser.add_argument('-bt', '--batch_type', type=str, required=True,
-                        help='batches type used (exp, lin)')
+                        help='batches type used (exp, lin, none)')
+    parser.add_argument('-bs', '--batch_size', type=str, required=True,
+                        help='batches size used for lin (required)')
     parser.add_argument('-eps', '--eps',
                         type=float, nargs='+', required=True,
                         help="list of statistical unfairness paramenters to be used")
@@ -57,12 +59,13 @@ if __name__ == "__main__":
     TT = args.time_steps_testing
     fairness = args.fairness_type
     batch = args.batch_type
+    batchsize = args.batch_size
     eps = args.eps
     nu = args.nu
     dataset = args.data
 
     print('Im running')
-    play(T1, T2, TT, fairness, batch, eps, nu, dataset)
+    play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset)
     print('/////// FINISHED ///////////')
 
 

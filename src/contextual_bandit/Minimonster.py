@@ -32,6 +32,9 @@ class MiniMonster(object):
         self.eps = eps
         self.nu = nu
 
+
+        ## Default training schedule is exponential
+
         self.statistics = Evaluation()
 
         self.DP_dict = {}
@@ -42,7 +45,10 @@ class MiniMonster(object):
         self.mean_pred_dict = {}
         self.t = 0
 
-    def fit(self, T, batch):
+
+
+
+    def fit(self, T, batch, batchsize):
 
         XA = pd.DataFrame()
         A = pd.Series(name='sensitive_features')
@@ -68,6 +74,30 @@ class MiniMonster(object):
         # print('Y1', Y1 )
         # print('XA1', XA1)
         self.statistics.evaluate(best_pi)
+
+        training_points = []
+        i = 4
+        if batch == "exp":
+            while True:
+                training_points.append(int(np.sqrt(2) ** i))
+                i += 1
+                if np.sqrt(2) ** i > T:
+                    break
+        if batch == 'lin':
+            ## Switch to linear training schedule with step 100
+            training_points = [50]
+            i = 1
+            while True:
+                training_points.append(int(i * batchsize))
+                i += 1
+                if i * 100 > T:
+                    break
+        else:
+            while True:
+                training_points.append(int(i))
+                i += 1
+                if i > T:
+                    break
 
 
         while t < T + 1:
@@ -95,20 +125,24 @@ class MiniMonster(object):
             # print('full_lvec', full_lvec)
             L = L.append(full_lvec, ignore_index=True)
 
-            # kind of batch formula defined here
-            if batch == "exp":
-                tau_m = 2 ** (m - 1)
-            elif batch.startswith('lin'):
-                #batchsize = [int(s) for s in batch.split() if s.isdigit()][0]
-                batchsize = 500
-                tau_m = batchsize * m
-            elif batch == "none":
-                tau_m = t
-            else:
-                print('error in defining batch')
+
+
+
+            # # kind of batch formula defined here
+            # if batch == "exp":
+            #     tau_m = 2 ** (m - 1)
+            # elif batch.startswith('lin'):
+            #     #batchsize = [int(s) for s in batch.split() if s.isdigit()][0]
+            #     batchsize = 500
+            #     tau_m = batchsize * m
+            # elif batch == "none":
+            #     tau_m = t
+            # else:
+            #     print('error in defining batch')
 
             # ---------- update batch (only push new ones) --------
-            if t == tau_m:
+            # if t == tau_m:
+            if t >= 10 and t in training_points:
                 print('--- batch update', m, 'at time', t)
 
                 dataset2_batch = pd.concat([XA, L, A], axis=1)
