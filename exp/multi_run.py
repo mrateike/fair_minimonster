@@ -82,15 +82,15 @@ def _build_submit_file(args, base_path):
                             command = "exp/run.py " \
                                       "-T1 {} " \
                                       "-T2 {} " \
-                                      "-TT{} " \
-                                      "-f{} " \
-                                      "-bt {}" \
+                                      "-TT {} " \
+                                      "-f {} " \
+                                      "-bt {} " \
                                       "-eps {} " \
                                       "-nu {} " \
-                                      "-d {}" \
+                                      "-d {} " \
                                       "{} " \
-                                      "{}"\
-                                      "{}".format(time_steps_1,
+                                      "{} "\
+                                      "{} ".format(time_steps_1,
                                                   time_steps_2,
                                                   args.time_steps_testing,
                                                   args.fairness_type,
