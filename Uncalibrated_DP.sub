@@ -22,7 +22,7 @@ request_cpus = 1
 # ----------------------------------------------------------------------- #
 
 environment = "PYTHONUNBUFFERED=TRUE"
-executable = /Users/mrateike/PycharmProjects/fair_minimonster
+executable = /home/mrateike/miniconda3/envs/fairlearn_original/bin/python
 
 error = None/Uncalibrated/error/experiment.$(Process).err
 output = None/Uncalibrated/output/experiment.$(Process).out
@@ -31,27 +31,9 @@ log = None/Uncalibrated/log/experiment.$(Process).log
 # QUEUE                                                                   #
 # ----------------------------------------------------------------------- #
 
-arguments = run.py -T1 5000 -T2 10000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
+arguments = run.py -T1 5000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -d UncalibratedNone/Uncalibrated/results  
 queue 
-arguments = run.py -T1 5000 -T2 20000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
+arguments = run.py -T1 10000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -d UncalibratedNone/Uncalibrated/results  
 queue 
-arguments = run.py -T1 5000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 10000 -T2 10000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 10000 -T2 20000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 10000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 15000 -T2 10000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 15000 -T2 20000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 15000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 20000 -T2 10000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 20000 -T2 20000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
-queue 
-arguments = run.py -T1 20000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -p UncalibratedNone/Uncalibrated/results  
+arguments = run.py -T1 15000 -T2 50000 -TT10000 -fDP -bt none-eps 0.01 -nu 1e-06 -d UncalibratedNone/Uncalibrated/results  
 queue 

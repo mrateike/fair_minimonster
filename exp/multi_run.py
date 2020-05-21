@@ -89,6 +89,7 @@ def _build_submit_file(args, base_path):
                                       "-nu {} " \
                                       "-d {}" \
                                       "{} " \
+                                      "{}"\
                                       "{}".format(time_steps_1,
                                                   time_steps_2,
                                                   args.time_steps_testing,
@@ -165,7 +166,7 @@ if __name__ == "__main__":
                              "if none is selected no fairness criterion is applied")
     parser.add_argument('-bt', '--batch_type', type=str, required=True,
                         help='batches type used (exp, lin)')
-    parser.add_argument('-epspython3 /Users/mrateike/PycharmProjects/fair_minimonster/exp/multi_run.py', '--eps', type=float, nargs='+', required=True,
+    parser.add_argument('-eps', '--eps', type=float, nargs='+', required=True,
                         help="list of statistical unfairness paramenters to be used")
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
                         help="list of accuracy parameters of the oracle to be used")
