@@ -12,48 +12,37 @@ _L1 = "l1"
 class ErrorRate(ClassificationMoment):
     """Misclassification error."""
 
-    short_name = "Err"
+    #short_name = "Err"
 
-    def load_data(self, X, y, **kwargs):
+    def load_data(self, X, loss):
         """Load the specified data into the object."""
 
         # super().load_data(X, y, **kwargs)
 
         self.X = X
-        self.tags = pd.DataFrame(y)
+        self.tags = pd.DataFrame(loss)
+
         self.index = [_ALL]
 
-        self.X_all = pd.concat([self.X1, self.X], axis = 0, ignore_index=True)
-        self.tags_all = pd.concat([self.tags1, self.tags], axis = 0, ignore_index=True)
+        self.X_all = pd.concat([self.X_all , self.X], axis = 0, ignore_index=True)
+        self.tags_all = pd.concat([self.tags_all, self.tags], axis = 0, ignore_index=True)
 
 
-    def load_data1(self, X, y, **kwargs):
 
-        # super().load_data1(X, y, **kwargs)
+    def load_data1(self, X, loss):
 
-        self.X1 = X
-        n = self.X1.shape[0]
-        data = np.zeros((n,2))
-        self.tags1 = pd.DataFrame(data, columns=[_L0,_L1])
-        self.index1 = [_ALL]
+        self.X_all = X
+        self.tags_all = pd.DataFrame(loss)
+        self.index = [_ALL]
 
-        index = 0
-        for value in y:
-            if value == 0 :
-                self.tags1.at[index,_L0] =0
-                self.tags1.at[index,_L1] =1
-            elif value == 1:
-                self.tags1.at[index, _L0] =1
-                self.tags1.at[index, _L1] =0
-            else:
-                print('ERROR')
-            index +=1
+
 
 
     def gamma(self, predictor):
         """Return the gamma values for the given predictor."""
         # evaluated on both datasets
         pred = predictor(self.X_all)
+        # print('pred', pred)
 
         # error = pd.Series(data=(self.tags_all[_LABEL] - pred).abs().mean(),
         #                   index=self.index)
@@ -62,21 +51,19 @@ class ErrorRate(ClassificationMoment):
         index = 0
         for value in pred:
             if value == 0:
-                errortoappend = self.tags_all.loc[index, _L0]
-                error.append(errortoappend)
+                error.append(self.tags_all.loc[index, _L0])
             else:
-                errortoappend = self.tags_all.loc[index, _L1]
-                error.append(errortoappend)
+                error.append(self.tags_all.loc[index, _L1])
             index += 1
-        error = error[1:]
-        error = statistics.mean(error)
-        self._gamma_descr = str(error)
+
+        error = statistics.mean(error[1:])
+        # self._gamma_descr = str(error)
         return error
 
     def project_lambda(self, lambda_vec):
         """Return the lambda values."""
         return lambda_vec
 
-    def signed_weights(self, lambda_vec=None):
+    def signed_weights(self):
         """Return the signed weights."""
         return self.tags_all[_L0] - self.tags_all[_L1]

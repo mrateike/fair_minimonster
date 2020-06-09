@@ -22,6 +22,7 @@ from . import (
     mean_absolute_error_group_summary,
     mean_squared_error_group_summary,
     r2_score_group_summary,
+    accuracy2_score_group_summary,
     )
 
 from ._input_manipulations import _convert_to_ndarray_and_squeeze
@@ -50,6 +51,7 @@ _allowed_prediction_types = frozenset([BINARY_CLASSIFICATION, REGRESSION])
 # The following keys need to match those of _metric_methods in
 # _fairlearn_dashboard.py
 # Issue 269 is about unifying the two sets
+ACCURACY2_SCORE_GROUP_SUMMARY = "accuracy2_score"
 ACCURACY_SCORE_GROUP_SUMMARY = "accuracy_score"
 BALANCED_ROOT_MEAN_SQUARED_ERROR_GROUP_SUMMARY = "balanced_root_mean_squared_error"
 FALLOUT_RATE_GROUP_SUMMARY = "fallout_rate"
@@ -69,6 +71,7 @@ SPECIFICITY_SCORE_GROUP_SUMMARY = "specificity_score"
 ZERO_ONE_LOSS_GROUP_SUMMARY = "zero_one_loss"
 
 BINARY_CLASSIFICATION_METRICS = {}
+BINARY_CLASSIFICATION_METRICS[ACCURACY2_SCORE_GROUP_SUMMARY] = accuracy2_score_group_summary
 BINARY_CLASSIFICATION_METRICS[ACCURACY_SCORE_GROUP_SUMMARY] = accuracy_score_group_summary
 BINARY_CLASSIFICATION_METRICS[FALLOUT_RATE_GROUP_SUMMARY] = false_positive_rate_group_summary
 BINARY_CLASSIFICATION_METRICS[MEAN_OVERPREDICTION_GROUP_SUMMARY] = _mean_overprediction_group_summary  # noqa:E501

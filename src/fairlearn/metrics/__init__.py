@@ -29,7 +29,8 @@ from ._extra_metrics import (  # noqa: F401
     _mean_overprediction,
     _mean_underprediction,
     test_statistics,
-    utility
+    utility,
+    accuracy2_score
     )
 
 from ._metrics_engine import (  # noqa: F401
@@ -58,7 +59,8 @@ _extra_metrics = [
     "_mean_overprediction",
     "_mean_underprediction",
     "test_statistics",
-    "utility"
+    "utility",
+    "accuracy2_score"
 ]
 
 

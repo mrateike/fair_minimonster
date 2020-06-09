@@ -24,7 +24,6 @@ class RegressionPolicy(Policy):
     def predict(self, x):
         return self.model.predict(x)
 
-
     def get_classifiers(self):
         classifiers = self.model.pilist
         return classifiers

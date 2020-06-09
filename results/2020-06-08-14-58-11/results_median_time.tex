@@ -1,0 +1,166 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.0235294117647059,0,0.501960784313725}
+\definecolor{color1}{rgb}{0.572549019607843,0.549019607843137,1}
+\definecolor{color2}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={Utility},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={Time steps},
+xmin=-0.15, xmax=3.15,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.0657, ymax=0.0157,
+ytick style={color=black},
+ytick={-0.08,-0.06,-0.04,-0.02,0,0.02},
+yticklabels={−0.08,−0.06,−0.04,−0.02,0.00,0.02}
+]
+\path [draw=color0, fill=color1, opacity=0.3]
+(axis cs:0,-0.057)
+--(axis cs:0,-0.057)
+--(axis cs:1,-0.039)
+--(axis cs:2,-0.062)
+--(axis cs:3,0.012)
+--(axis cs:3,0.012)
+--(axis cs:3,0.012)
+--(axis cs:2,-0.062)
+--(axis cs:1,-0.039)
+--(axis cs:0,-0.057)
+--cycle;
+
+\addplot [semithick, color2]
+table {%
+0 -0.057
+1 -0.039
+2 -0.062
+3 0.012
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={Accuracy},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={Time steps},
+xmin=-0.15, xmax=3.15,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.5746, ymax=0.7374,
+ytick style={color=black},
+ytick={0.55,0.6,0.65,0.7,0.75},
+yticklabels={0.55,0.60,0.65,0.70,0.75}
+]
+\path [draw=color0, fill=color1, opacity=0.3]
+(axis cs:0,0.592)
+--(axis cs:0,0.592)
+--(axis cs:1,0.628)
+--(axis cs:2,0.582)
+--(axis cs:3,0.73)
+--(axis cs:3,0.73)
+--(axis cs:3,0.73)
+--(axis cs:2,0.582)
+--(axis cs:1,0.628)
+--(axis cs:0,0.592)
+--cycle;
+
+\addplot [semithick, color2]
+table {%
+0 0.592
+1 0.628
+2 0.582
+3 0.73
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={Demographic Parity},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={Time steps},
+xmin=-0.15, xmax=3.15,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.169031244489331, ymax=0.0376408727296045,
+ytick style={color=black},
+ytick={-0.2,-0.15,-0.1,-0.05,0,0.05},
+yticklabels={−0.20,−0.15,−0.10,−0.05,0.00,0.05}
+]
+\path [draw=color0, fill=color1, opacity=0.3]
+(axis cs:0,0.0216899918241716)
+--(axis cs:0,0.0216899918241716)
+--(axis cs:1,-0.0291283925680117)
+--(axis cs:2,0.0282466855832892)
+--(axis cs:3,-0.159637057343016)
+--(axis cs:3,-0.159637057343016)
+--(axis cs:3,-0.159637057343016)
+--(axis cs:2,0.0282466855832892)
+--(axis cs:1,-0.0291283925680117)
+--(axis cs:0,0.0216899918241716)
+--cycle;
+
+\addplot [semithick, color2]
+table {%
+0 0.0216899918241716
+1 -0.0291283925680117
+2 0.0282466855832892
+3 -0.159637057343016
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={Equality of Opportunity},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={Time steps},
+xmin=-0.15, xmax=3.15,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.212639925373134, ymax=0.0613339552238806,
+ytick style={color=black},
+ytick={-0.3,-0.2,-0.1,0,0.1},
+yticklabels={−0.3,−0.2,−0.1,0.0,0.1}
+]
+\path [draw=color0, fill=color1, opacity=0.3]
+(axis cs:0,0.0287313432835821)
+--(axis cs:0,0.0287313432835821)
+--(axis cs:1,0.0488805970149254)
+--(axis cs:2,-0.0789179104477612)
+--(axis cs:3,-0.200186567164179)
+--(axis cs:3,-0.200186567164179)
+--(axis cs:3,-0.200186567164179)
+--(axis cs:2,-0.0789179104477612)
+--(axis cs:1,0.0488805970149254)
+--(axis cs:0,0.0287313432835821)
+--cycle;
+
+\addplot [semithick, color2]
+table {%
+0 0.0287313432835821
+1 0.0488805970149254
+2 -0.0789179104477612
+3 -0.200186567164179
+};
+\end{groupplot}
+
+\end{tikzpicture}

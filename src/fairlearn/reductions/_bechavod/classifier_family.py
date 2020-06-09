@@ -33,8 +33,9 @@ class AcceptAll(ClassifierH):
     def get_name(self):
         return self.name
     def predict(self, X):
-        pred = pd.Series(np.ones(np.size(X,0), dtype=int)).values.tolist()
-        return pred
+        # deleted .tolist()
+        pred = pd.Series(np.ones(np.size(X,0), dtype=int)).values
+        return pred, 1
 
 class DenyAll(ClassifierH):
     def __init__(self):
@@ -43,7 +44,7 @@ class DenyAll(ClassifierH):
     def get_name(self):
         return self.name
     def predict(self, X):
-        return pd.Series(np.zeros(np.size(X,0), dtype=int)).values.tolist()
+        return pd.Series(np.zeros(np.size(X,0), dtype=int)), 1
 
 class SensitiveFlip(ClassifierH):
     def __init__(self):
@@ -52,9 +53,9 @@ class SensitiveFlip(ClassifierH):
     def get_name(self):
         return self.name
     def predict(self, X):
-        flip = pd.concat([X.loc[:,'sensitive_features_X']==0], axis=0).astype(int)
-        dec = flip.values.tolist()
-        return dec
+        dec = pd.concat([X.loc[:,'sensitive_features_X']==0], axis=0).astype(int)
+        #dec = flip.values.tolist()
+        return dec, 1
 
 class SensitiveEqual(ClassifierH):
     def __init__(self):
@@ -62,8 +63,9 @@ class SensitiveEqual(ClassifierH):
         self.name = 'SensEqual'
 
     def predict(self, XA):
-        dec = XA.loc[:,'sensitive_features_X'].to_list()
-        return dec
+        # deleted .to_list()
+        dec = XA.loc[:,'sensitive_features_X']
+        return dec, 1
 
 class ClassifierFamily(object):
 

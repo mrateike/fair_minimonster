@@ -13,6 +13,7 @@ from ._extra_metrics import (
     selection_rate,
     _mean_overprediction,
     _mean_underprediction,
+    accuracy2_score
     )
 
 from ._input_manipulations import _convert_to_ndarray_and_squeeze
@@ -285,6 +286,7 @@ METRICS_SPEC = [
     (selection_rate, ["difference", "ratio", "group_min", "group_max"]),
     (_mean_overprediction, []),
     (_mean_underprediction, []),
+    (accuracy2_score, []),
 
     # base metrics from sklearn.metrics
     (skm.accuracy_score, ["difference", "ratio", "group_min", "group_max"]),

@@ -11,168 +11,140 @@ import matplotlib
 
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+
 import tikzplotlib as tpl
-from src.training_evaluation import Statistics, ModelParameters
+from src.evaluation.training_evaluation import MEAN, MEDIAN
 
 
-def _plot_results(
-        utility,
-        fairness,
-        demographic_parity,
-        equality_of_opportunity,
-        xaxis,
-        xlable,
-        xscale,
-        utility_uncertainty=None,
-        fairness_uncertainty=None,
-        demographic_parity_uncertainty=None,
-        equality_of_opportunity_uncertainty=None,
-        lambdas=None,
-        lambdas_uncertainty=None,
-        file_path=None,
-        plot_fairness=False):
-    if lambdas is not None:
-        if plot_fairness:
-            f, (ax1, ax2, ax3, ax4, ax5) = plt.subplots(1, 5, sharex=True, figsize=(25, 10))
-        else:
-            f, (ax1, ax2, ax3, ax5) = plt.subplots(1, 4, sharex=True, figsize=(25, 10))
+def _plot_results(plotting_dictionary, file_path, figsize, plots_per_row):
+    x = plotting_dictionary["plot_info"]["x_axis"]
+    x_scale = plotting_dictionary["plot_info"]["x_scale"]
+    x_label = plotting_dictionary["plot_info"]["x_label"]
 
-        ax5.plot(xaxis, lambdas)
-        ax5.set_xlabel(xlable)
-        ax5.set_ylabel("Lambda")
-        ax5.set_xscale(xscale)
-        # ax4.xaxis.set_major_locator(MaxNLocator(integer=True))
-        if lambdas_uncertainty is not None:
-            ax5.fill_between(xaxis, lambdas_uncertainty[0], lambdas_uncertainty[1], alpha=0.3, edgecolor='#060080',
-                             facecolor='#928CFF')
+    performance_measures = plotting_dictionary["performance_measures"]
+    fairness_measures = plotting_dictionary["fairness_measures"]
+
+    num_columns = min(len(performance_measures.items()), plots_per_row)
+    if num_columns < plots_per_row:
+        num_columns = min(max(len(fairness_measures.items()), num_columns), plots_per_row)
+
+    # get num_rows for maximum of plots_per_row graphs per row
+    num_rows = (len(performance_measures.items()) // num_columns) + (
+        1 if len(performance_measures.items()) % num_columns > 0 else 0)
+    num_rows += (len(fairness_measures.items()) // num_columns) + (
+        1 if len(fairness_measures.items()) % num_columns > 0 else 0)
+
+    if figsize is None:
+        figure = plt.figure(constrained_layout=True)
     else:
-        if plot_fairness:
-            f, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, sharex=True, figsize=(25, 10))
-        else:
-            f, (ax1, ax2, ax3) = plt.subplots(1, 3, sharex=True, figsize=(25, 10))
+        figure = plt.figure(constrained_layout=True, figsize=figsize, dpi=80)
 
-    ax1.plot(xaxis, utility)
-    ax1.set_xlabel(xlable)
-    ax1.set_ylabel("Utility")
-    ax1.set_xscale(xscale)
-    # ax1.xaxis.set_major_locator(MaxNLocator(integer=True))
-    if utility_uncertainty is not None:
-        ax1.fill_between(xaxis, utility_uncertainty[0], utility_uncertainty[1], alpha=0.3, edgecolor='#060080',
-                         facecolor='#928CFF')
+    grid = GridSpec(nrows=num_rows, ncols=num_columns, figure=figure)
 
-    ax2.plot(xaxis, demographic_parity)
-    ax2.set_xlabel(xlable)
-    ax2.set_ylabel("Benefit Delta (Disparate Impact)")
-    ax2.set_xscale(xscale)
-    # ax2.xaxis.set_major_locator(MaxNLocator(integer=True))
-    if demographic_parity_uncertainty is not None:
-        ax2.fill_between(xaxis, demographic_parity_uncertainty[0], demographic_parity_uncertainty[1], alpha=0.3,
-                         edgecolor='#060080', facecolor='#928CFF')
+    current_row = 0
+    current_column = 0
 
-    ax3.plot(xaxis, equality_of_opportunity)
-    ax3.set_xlabel(xlable)
-    ax3.set_ylabel("Benefit Delta (Equality of Opportunity)")
-    ax3.set_xscale(xscale)
-    # ax3.xaxis.set_major_locator(MaxNLocator(integer=True))
-    if equality_of_opportunity_uncertainty is not None:
-        ax3.fill_between(xaxis, equality_of_opportunity_uncertainty[0], equality_of_opportunity_uncertainty[1],
-                         alpha=0.3, edgecolor='#060080', facecolor='#928CFF')
+    for measure_dict in [performance_measures, fairness_measures]:
+        for y_label, y_dict in measure_dict.items():
+            y = y_dict["value"]
+            y_uncertainty_lower = y_dict["uncertainty_lower_bound"]
+            y_uncertainty_upper = y_dict["uncertainty_upper_bound"]
 
-    if plot_fairness:
-        ax4.plot(xaxis, fairness)
-        ax4.set_xlabel(xlable)
-        ax4.set_ylabel("Fairness Function")
-        ax4.set_xscale(xscale)
-        # ax1.xaxis.set_major_locator(MaxNLocator(integer=True))
-        if fairness_uncertainty is not None:
-            ax4.fill_between(xaxis, fairness_uncertainty[0], fairness_uncertainty[1], alpha=0.3, edgecolor='#060080',
-                             facecolor='#928CFF')
+            axis = figure.add_subplot(grid[current_row, current_column])
+            axis.plot(x, y)
+            axis.set_xlabel(x_label)
+            axis.title.set_text(y_label)
+            axis.set_xscale(x_scale)
+            axis.fill_between(x,
+                              y_uncertainty_lower,
+                              y_uncertainty_upper,
+                              alpha=0.3,
+                              edgecolor='#060080',
+                              facecolor='#928CFF')
 
-    if file_path is None:
-        plt.show()
-    else:
-        plt.savefig(file_path)
-        tpl.save(file_path.replace(".png", ".tex"), figure=f, axis_width='\\figwidth', axis_height='\\figheight',
-                 tex_relative_path_to_data='')
+            if current_column < num_columns - 1:
+                current_column += 1
+            else:
+                current_column = 0
+                current_row += 1
 
+        if current_column > 0:
+            current_row += 1
+            current_column = 0
+
+    plt.savefig(file_path)
+    tpl.save(file_path.replace(".png", ".tex"),
+             figure=figure,
+             axis_width='\\figwidth',
+             axis_height='\\figheight',
+             tex_relative_path_to_data='.',
+             extra_groupstyle_parameters={"horizontal sep=1.2cm"},
+             extra_axis_parameters={"scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
     plt.close('all')
 
 
-def plot_median(statistics, file_path=None, model_parameters=None, plot_fairness=False):
-    if model_parameters is not None:
-        lambdas = model_parameters.get_lagrangians(result_format=ModelParameters.MEDIAN)
-        lambdas_uncertainty = (model_parameters.get_lagrangians(result_format=ModelParameters.FIRST_QUARTILE),
-                               model_parameters.get_lagrangians(result_format=ModelParameters.THIRD_QUARTILE))
-    else:
-        lambdas = None
-        lambdas_uncertainty = None
-
-    _plot_results(
-        utility=statistics.performance(measure_key=Statistics.UTILITY, result_format=Statistics.MEDIAN),
-        fairness=statistics.fairness(measure_key=Statistics.FAIRNESS, result_format=Statistics.MEDIAN),
-        demographic_parity=statistics.fairness(measure_key=Statistics.DEMOGRAPHIC_PARITY,
-                                               result_format=Statistics.MEDIAN),
-        equality_of_opportunity=statistics.fairness(measure_key=Statistics.EQUALITY_OF_OPPORTUNITY,
-                                                    result_format=Statistics.MEDIAN),
-        xaxis=statistics.results[Statistics.X_VALUES],
-        xlable=statistics.results[Statistics.X_NAME],
-        xscale=statistics.results[Statistics.X_SCALE],
-        utility_uncertainty=
-        (statistics.performance(measure_key=Statistics.UTILITY, result_format=Statistics.FIRST_QUARTILE),
-         statistics.performance(measure_key=Statistics.UTILITY, result_format=Statistics.THIRD_QUARTILE)),
-        fairness_uncertainty=
-        (statistics.fairness(measure_key=Statistics.FAIRNESS, result_format=Statistics.FIRST_QUARTILE),
-         statistics.fairness(measure_key=Statistics.FAIRNESS, result_format=Statistics.THIRD_QUARTILE)),
-        demographic_parity_uncertainty=
-        (statistics.fairness(measure_key=Statistics.DEMOGRAPHIC_PARITY, result_format=Statistics.FIRST_QUARTILE),
-         statistics.fairness(measure_key=Statistics.DEMOGRAPHIC_PARITY, result_format=Statistics.THIRD_QUARTILE)),
-        equality_of_opportunity_uncertainty=
-        (statistics.fairness(measure_key=Statistics.EQUALITY_OF_OPPORTUNITY, result_format=Statistics.FIRST_QUARTILE),
-         statistics.fairness(measure_key=Statistics.EQUALITY_OF_OPPORTUNITY, result_format=Statistics.THIRD_QUARTILE)),
-        lambdas=lambdas,
-        lambdas_uncertainty=lambdas_uncertainty,
-        file_path=file_path,
-        plot_fairness=plot_fairness)
+def plot_median(x_values,
+                x_label,
+                x_scale,
+                performance_measures,
+                fairness_measures,
+                file_path,
+                figsize=None,
+                plots_per_row=4):
+    plotting_dict = _build_plot_dict(x_values, x_label, x_scale, performance_measures, fairness_measures, MEDIAN)
+    _plot_results(plotting_dict, file_path, figsize, plots_per_row)
 
 
-def plot_mean(statistics, file_path=None, model_parameters=None, plot_fairness=False):
-    u_mean = statistics.performance(measure_key=Statistics.UTILITY, result_format=Statistics.MEAN)
-    u_stddev = statistics.performance(measure_key=Statistics.UTILITY, result_format=Statistics.STANDARD_DEVIATION)
+def plot_mean(x_values,
+              x_label,
+              x_scale,
+              performance_measures,
+              fairness_measures,
+              file_path,
+              figsize=None,
+              plots_per_row=4):
+    plotting_dict = _build_plot_dict(x_values, x_label, x_scale, performance_measures, fairness_measures, MEAN)
+    _plot_results(plotting_dict, file_path, figsize, plots_per_row)
 
-    f_mean = statistics.fairness(measure_key=Statistics.FAIRNESS, result_format=Statistics.MEAN)
-    f_stddev = statistics.fairness(measure_key=Statistics.FAIRNESS, result_format=Statistics.STANDARD_DEVIATION)
 
-    dp_mean = statistics.fairness(measure_key=Statistics.DEMOGRAPHIC_PARITY, result_format=Statistics.MEAN)
-    dp_stddev = statistics.fairness(measure_key=Statistics.DEMOGRAPHIC_PARITY,
-                                    result_format=Statistics.STANDARD_DEVIATION)
+def _build_plot_dict(x_values,
+                     x_label,
+                     x_scale,
+                     performance_measures,
+                     fairness_measures,
+                     result_format):
+    p_measures = performance_measures if isinstance(performance_measures, list) else [performance_measures]
+    f_measures = fairness_measures if isinstance(fairness_measures, list) else [fairness_measures]
 
-    eop_mean = statistics.fairness(measure_key=Statistics.EQUALITY_OF_OPPORTUNITY, result_format=Statistics.MEAN)
-    eop_stddev = statistics.fairness(measure_key=Statistics.EQUALITY_OF_OPPORTUNITY,
-                                     result_format=Statistics.STANDARD_DEVIATION)
+    plotting_dict = {
+        "plot_info": {
+            "x_axis": x_values,
+            "x_label": x_label,
+            "x_scale": x_scale
+        },
+        "performance_measures": {},
+        "fairness_measures": {}
+    }
 
-    if model_parameters is not None:
-        lambdas = model_parameters.get_lagrangians(result_format=ModelParameters.MEAN)
-        lambdas_uncertainty = (
-        model_parameters.get_lagrangians(result_format=ModelParameters.MEAN) - model_parameters.get_lagrangians(
-            result_format=ModelParameters.STANDARD_DEVIATION),
-            model_parameters.get_lagrangians(result_format=ModelParameters.MEAN) + model_parameters.get_lagrangians(result_format=ModelParameters.STANDARD_DEVIATION))
-    else:
-        lambdas = None
-        lambdas_uncertainty = None
+    for measure_set, measure_set_key in [(p_measures, "performance_measures"), (f_measures, "fairness_measures")]:
+        for measure in measure_set:
+            measure_label = measure.name
 
-    _plot_results(
-        utility=u_mean,
-        fairness=f_mean,
-        demographic_parity=dp_mean,
-        equality_of_opportunity=eop_mean,
-        xaxis=statistics.results[Statistics.X_VALUES],
-        xlable=statistics.results[Statistics.X_NAME],
-        xscale=statistics.results[Statistics.X_SCALE],
-        utility_uncertainty=(u_mean - u_stddev, u_mean + u_stddev),
-        fairness_uncertainty=(f_mean - f_stddev, f_mean + f_stddev),
-        demographic_parity_uncertainty=(dp_mean - dp_stddev, dp_mean + dp_stddev),
-        equality_of_opportunity_uncertainty=(eop_mean - eop_stddev, eop_mean + eop_stddev),
-        lambdas=lambdas,
-        lambdas_uncertainty=lambdas_uncertainty,
-        file_path=file_path,
-        plot_fairness=plot_fairness)
+            if result_format == MEAN:
+                value = measure.mean()
+                measure_stddev = measure.standard_deviation()
+                lower_bound = value - measure_stddev
+                upper_bound = value + measure_stddev
+            elif result_format == MEDIAN:
+                value = measure.median()
+                lower_bound = measure.first_quartile()
+                upper_bound = measure.third_quartile()
+
+            plotting_dict[measure_set_key][measure_label] = {
+                "value": value,
+                "uncertainty_lower_bound": lower_bound,
+                "uncertainty_upper_bound": upper_bound
+            }
+
+    return plotting_dict

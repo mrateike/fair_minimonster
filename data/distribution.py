@@ -351,6 +351,8 @@ class AdultCreditDistribution(ResamplingDistribution):
     def _load_data(self):
         data = AdultDataset()
 
+        print('length Adult', len(data))
+
         # use race as the sensitive attribute
         race = data.df['race']
         s = race.where(race == 'White', 1)

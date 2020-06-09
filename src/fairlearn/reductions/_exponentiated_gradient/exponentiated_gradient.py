@@ -46,14 +46,15 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
     :type eta_mul: float
     """
 
-    def __init__(self, dataset1, estimator, constraints, eps=0.01, T=50, nu=None, eta_mul=2.0):  # noqa: D103
+    def __init__(self, dataset1, estimator, constraints, eps=0.01, T=50, nu=None, eta0=2.0):  # noqa: D103
         self._estimator = estimator
         self._constraints = constraints
         self._eps = eps
         self._T = T
         self._nu = nu[0]
-        self._eta_mul = eta_mul
+        self._eta0 = eta0
         self._dataset1 = dataset1
+        self.B = 2
 
         self._best_gap = None
         self._predictors = None
@@ -67,7 +68,7 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         self._lambda_vecs_LP = pd.DataFrame()
         self._lambda_vecs_lagrangian = pd.DataFrame()
 
-    def fit(self, X, y, **kwargs):
+    def fit(self, X=None, y=None, **kwargs):
         """Return a fair classifier under specified fairness constraints.
 
         :param X: The feature matrix
@@ -76,30 +77,39 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         :param y: The label vector
         :type y: numpy.ndarray, pandas.DataFrame, pandas.Series, or list
         """
-        if isinstance(self._constraints, ClassificationMoment):
-            logger.debug("Classification problem detected")
-            is_classification_reduction = True
-        else:
-            logger.debug("Regression problem detected")
-            is_classification_reduction = False
+        # if isinstance(self._constraints, ClassificationMoment):
+        #     logger.debug("Classification problem detected")
+        #     is_classification_reduction = True
+        # else:
+        #     logger.debug("Regression problem detected")
+        #     is_classification_reduction = False
 
         # doesnt work because y has two columns
         # _, y_train, sensitive_features = _validate_and_reformat_input(
         #     X, y, enforce_binary_labels=is_classification_reduction, **kwargs)
         # n = y_train.shape[0]
-        if _KW_SENSITIVE_FEATURES in kwargs:
-            sensitive_features = kwargs[_KW_SENSITIVE_FEATURES]
-        y_train = y
 
-        n = y_train.shape[0]
-
-
-        #B = 1 / self._eps
-        B = 2
+        self.lambda_vecs_EG_ = pd.DataFrame()
+        self.lambda_vecs_LP_ = pd.DataFrame()
+        self.lambda_vecs_ = pd.DataFrame()
 
 
-        lagrangian = _Lagrangian(self._dataset1, X, sensitive_features, y_train, self._estimator,
-                                 self._constraints, self._eps, B)
+        if y is not None and X is not None:
+            if _KW_SENSITIVE_FEATURES in kwargs:
+                sensitive_features = kwargs[_KW_SENSITIVE_FEATURES]
+            y_train = y
+            #n = y_train.shape[0]
+            lagrangian = _Lagrangian(self._dataset1, self._estimator,
+                                     self._constraints, self._eps, self.B, X, sensitive_features, y_train)
+
+        else:
+            lagrangian = _Lagrangian(self._dataset1, self._estimator,
+                                     self._constraints, self._eps, self.B)
+
+        #B = 1 / self._eps[0]
+        #(1/0.3 = 3.33, 1/0.01 = 100) / 1/0.5 = 2
+        # Assumption sens_att identity functions in H: B = 2
+
 
         theta = pd.Series(0, lagrangian.constraints.index)
         pisum = pd.Series(dtype="float64")
@@ -110,22 +120,22 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         last_regret_checked = _REGRET_CHECK_START_T
         last_gap = np.PINF
         for t in range(0, self._T):
-            logger.debug("...iter=%03d", t)
+            #logger.debug("...iter=%03d", t)
 
             # set lambdas for every constraint
-            lambda_vec = B * np.exp(theta) / (1 + np.exp(theta).sum())
-            self._lambda_vecs[t] = lambda_vec
-            lambda_EG = self._lambda_vecs.mean(axis=1)
+            lambda_vec = self.B * np.exp(theta) / (1 + np.exp(theta).sum())
+            self.lambda_vecs_EG_[t] = lambda_vec
+            lambda_EG = self.lambda_vecs_EG_.mean(axis=1)
 
             # select classifier according to best_h method
             h, h_idx = lagrangian.best_h(lambda_vec)
 
             if t == 0:
-                if self._nu is None:
-                    self._nu = _ACCURACY_MUL * (h(X) - y_train).abs().std() / np.sqrt(n)
-
-                eta_min = self._nu / (2 * B)
-                eta = self._eta_mul / B
+                # if self._nu is None:
+                #     self._nu = _ACCURACY_MUL * (h(X) - y_train).abs().std() / np.sqrt(n)
+                #eta_min = self._nu / (2 * B)
+                # eta is 1
+                eta = self._eta0 / self.B
 
             if h_idx not in pisum.index:
                 pisum.at[h_idx] = 0.0
@@ -141,7 +151,7 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
             else:
                 # saddle point optimization over the convex hull of
                 # classifiers returned so far
-                pi_LP, self._lambda_vecs_LP[t], result_LP = lagrangian.solve_linprog(self._nu)
+                pi_LP, self.lambda_vecs_LP_[t], result_LP = lagrangian.solve_linprog(self._nu)
                 gap_LP = result_LP.gap()
 
             # keep values from exponentiated gradient or linear programming
@@ -161,7 +171,8 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
                 # solution found
                 break
 
-            # update regret
+            # update regret (_REGRET_CHECK_INCREASE_T = 1.6, _SHRINK_REGRET = 0.8
+            # _SHRINK_ETA = 0.8)
             if t >= last_regret_checked * _REGRET_CHECK_INCREASE_T:
                 best_gap = min(gaps_EG)
 
@@ -189,7 +200,7 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         self._n_oracle_calls = lagrangian.n_oracle_calls
         self._n_oracle_calls_dummy_returned = lagrangian.n_oracle_calls_dummy_returned
         self._oracle_execution_times = lagrangian.oracle_execution_times
-        self._lambda_vecs_lagrangian = lagrangian.lambdas
+        self.lambda_vecs_lagrangian = lagrangian.lambdas
 
         # logger.debug("...eps=%.3f, B=%.1f, nu=%.6f, T=%d, eta_min=%.6f",
         #              self._eps, B, self._nu, self._T, eta_min)
@@ -210,10 +221,29 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
             the result will be a scalar. Otherwise the result will be a vector
         :rtype: Scalar or vector
         """
-        positive_probs = self._pmf_predict(X)[:, 1]
-        return (positive_probs >= np.random.rand(len(positive_probs))) * 1
+
+        probs = self._pmf_predict(X)
+        positive_probs = probs[:, 1]
+
+        # print('pmf_predict: positive_probs', positive_probs)
+        threshold = np.random.rand(len(positive_probs))
+        # print('pmf_predict: threshold', threshold)
+        dec = (positive_probs >= threshold) * 1
+        # print('pmf_predict: dec', dec)
+        i=0
+        dec_prob = np.array([[7,7]])
+
+        for d in dec:
+            prop_dec = probs[i,int(d)]
+            dec_prob = np.append(dec_prob, np.array([[int(d), float(prop_dec)]]), axis=0)
+        dec_prob =  dec_prob[1:, :]
+
+
+
+        return dec_prob
 
     def _pmf_predict(self, X):
+
         """Probability mass function for the given input data.
 
         :param X: Feature data
@@ -221,8 +251,10 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         :return: Array of tuples with the probabilities of predicting 0 and 1.
         :rtype: pandas.DataFrame
         """
+
         pred = pd.DataFrame()
         for t in range(len(self._hs)):
             pred[t] = self._hs[t](X)
+        # print('pmf_pred, self._weights', pred, self._weights)
         positive_probs = pred[self._weights.index].dot(self._weights).to_frame()
         return np.concatenate((1-positive_probs, positive_probs), axis=1)

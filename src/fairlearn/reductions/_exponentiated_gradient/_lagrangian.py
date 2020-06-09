@@ -39,28 +39,37 @@ class _Lagrangian:
     :type opt_lambda: bool
     """
 
-    def __init__(self, dataset1, X, sensitive_features, y_loss, estimator, constraints, eps, B, opt_lambda=True):
+    def __init__(self, dataset1, estimator, constraints, eps, B, X=None, sensitive_features=None, y_loss=None):
+        opt_lambda = True
+
+        # XA, L, A
         self._dataset1 = dataset1
 
-        _X1 = dataset1.drop(['sensitive_features', 'label'], axis = 1)
-        _y1 = dataset1.loc[:, 'label']
-        _sensitive_features1 = dataset1.loc[:,'sensitive_features']
+        self.X_all = dataset1.drop(['sensitive_features', 'label', 'l0', 'l1'], axis = 1)
+        _loss1 = dataset1.loc[:, ['l0','l1']]
+        _y1 = dataset1.loc[:,['label']]
+        _sensitive_features1 = dataset1.loc[:,['sensitive_features']]
 
-
-        self.X = X
-        self.X_all = pd.concat([_X1, self.X], axis = 0, ignore_index=True)
-
-
-        y_loss2 = copy.deepcopy(y_loss)
 
         self.constraints = constraints
-        self.constraints.load_data1(_X1, _y1, sensitive_features=_sensitive_features1)
-        self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
-
+        self.constraints.load_data1(self.X_all, _y1, sensitive_features=_sensitive_features1)
 
         self.obj = self.constraints.default_objective()
-        self.obj.load_data1(_X1, _y1, sensitive_features=_sensitive_features1)
-        self.obj.load_data(X, y_loss2, sensitive_features=sensitive_features)
+        self.obj.load_data1(self.X_all, _loss1)
+
+        if X is not None and sensitive_features is not None and y_loss is not None:
+
+            self.X_all = pd.concat([self.X_all, X], axis = 0, ignore_index=True)
+
+            y_loss2 = copy.deepcopy(y_loss)
+
+            self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
+
+            self.obj.load_data(X, y_loss2)
+
+            #self.n2 = self.X.shape[0]
+        else:
+            print('None in Lagrange')
 
 
         # self.classifier_family.load()
@@ -87,7 +96,7 @@ class _Lagrangian:
         self.errors = pd.Series(dtype="float64")
         self.gammas = pd.DataFrame()
         self.lambdas = pd.DataFrame()
-        self.n2 = self.X.shape[0]
+
         self.n_oracle_calls = 0
         self.n_oracle_calls_dummy_returned = 0
         self.oracle_execution_times = []
@@ -176,21 +185,26 @@ class _Lagrangian:
         signed_weights = self.obj.signed_weights() + self.constraints.signed_weights(lambda_vec)
         redY = 1 * (signed_weights > 0)
         redW = signed_weights.abs()
-        redW = self.n2 * redW / redW.sum()
 
-        redY_unique = np.unique(redY)
+        # Origignal was imposing n as a parameter for reweighting?
+        redW = redY.shape[0] * redW / redW.sum()
+        # print('call oracle: redY.shape[0]', redY.shape[0])
 
-        classifier = None
-        if len(redY_unique) == 1:
-            # logger.debug("redY had single value. Using DummyClassifier")
-            classifier = DummyClassifier(strategy='constant',
-                                         constant=redY_unique[0])
-            self.n_oracle_calls_dummy_returned += 1
-        else:
-            classifier = pickle.loads(self.pickled_estimator)
+        # redY_unique = np.unique(redY)
+        # classifier = None
+        # if len(redY_unique) == 1:
+        #     # logger.debug("redY had single value. Using DummyClassifier")
+        #     classifier = DummyClassifier(strategy='constant',
+        #                                  constant=redY_unique[0])
+        #     self.n_oracle_calls_dummy_returned += 1
+        # else:
+
+        classifier = pickle.loads(self.pickled_estimator)
 
         oracle_call_start_time = time()
+        # print('call oracle: self.X_all, redY, redW', self.X_all, redY, redW)
         classifier.fit(self.X_all, redY, sample_weight=redW)
+
         self.oracle_execution_times.append(time() - oracle_call_start_time)
         self.n_oracle_calls += 1
 
@@ -204,6 +218,7 @@ class _Lagrangian:
         """
         classifier = self._call_oracle(lambda_vec)
         def h(X): return classifier.predict(X)
+
         # h_error = self.obj.gamma(h)[0]
         h_error = self.obj.gamma(h)
         h_gamma = self.constraints.gamma(h)

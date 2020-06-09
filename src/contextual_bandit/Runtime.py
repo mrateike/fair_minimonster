@@ -4,15 +4,12 @@ from src.fairlearn.reductions._moments.conditional_selection_rate import Demogra
 from src.contextual_bandit import Simulators
 from src.contextual_bandit.Minimonster import MiniMonster
 import pandas as pd
-from src.fairlearn.metrics import mean_prediction_group_summary, accuracy_score_group_summary, demographic_parity_difference, demographic_parity_ratio, \
-    true_positive_rate_difference, true_positive_rate_ratio, false_positive_rate_difference, false_positive_rate_ratio, test_statistics
-from IPython.display import display
+
 _L0 = "l0"
 _L1 = "l1"
 import time
 from sklearn.linear_model import LogisticRegression
-from src.contextual_bandit.Evaluation import Evaluation
-from pathlib import Path
+from src.evaluation.Evaluation import Evaluation
 import numpy as np
 
 # class Runtime(object):
@@ -21,8 +18,8 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
 
 
 
-    statistics1 = Evaluation()
-    statistics2 = Evaluation()
+    statistics1 = Evaluation(TT)
+    statistics2 = Evaluation(TT)
     # # shifts = True (DP), shifts = False (TPR, EOdds)
     if fairness == "TPR":
         fairness = TruePositiveRateDifference()
@@ -35,9 +32,10 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
     # dataset = 'Uncalibrated'
     B = Simulators.DatasetBandit(dataset)
 
+    # returns: XA, L(l0, l1), A, Y
     dataset1 = B.get_new_context_set(T1)
 
-    M = MiniMonster(B, fairness, dataset1, eps, nu)
+    M = MiniMonster(B, fairness, dataset1, eps, nu, TT)
 
     print("------------- start fit ---------------")
     start = time.time()
@@ -46,32 +44,33 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
     l1, l2, Q, best_pi = M.fit(T2, batch, batchsize)
     stop = time.time()
     training_time = np.array([stop - start])
-    print('L_t', l1)
+    # print('L_t', l1)
 
 
     # save model
 
 
-    print('end fit: time', training_time)
+    print('------------- END of ALGORITHM  ----- time', training_time)
 
     # testing rounds ! dont do too small!
-    print("------------- END of ALGORITHM EVALUATION  -----")
+
+    print("---- EVALUATION -----")
     dataset_test = B.get_new_context_set(TT)
     # print('dataset_test', dataset_test)
     a_test = dataset_test.loc[:, 'sensitive_features']
     y_test = dataset_test.loc[:, 'label']
-    xa_test = dataset_test.drop(columns=['sensitive_features', 'label'])
+    xa_test = dataset_test.drop(columns=['sensitive_features', 'label', 'l0', 'l1'])
 
-    scores = pd.Series(best_pi.predict(xa_test), name="scores_expgrad_XA")
+    dec_prob = best_pi.predict(xa_test)
+    scores = pd.Series(dec_prob[:, 0], name="scores_expgrad_XA").astype(int)
 
+    acc, mean_pred, parity, FPR, TPR, EO, util  = statistics1.get_stats(y_test, scores, a_test)
+    statistics1.save_stats(acc, mean_pred, parity, FPR, TPR, EO, util, scores)
 
-    statistics1.get_stats(y_test, scores, a_test)
-
-
-    def summary_as_df(name, summary):
-        a = pd.Series(summary.by_group)
-        a['overall'] = summary.overall
-        return pd.DataFrame({name: a})
+    # def summary_as_df(name, summary):
+    #     a = pd.Series(summary.by_group)
+    #     a['overall'] = summary.overall
+    #     return pd.DataFrame({name: a})
     #
     #
     # print("------------- END of ALGORITHM evaluate best_pi -----")
@@ -114,19 +113,10 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
     print("------------- COMPARISON without phase 2 -----")
 
     _y = dataset1.loc[:, 'label']
-    XA = pd.DataFrame(dataset1.iloc[:, 0:2])
+    XA = pd.DataFrame(dataset1.drop(columns=['sensitive_features', 'label', 'l0', 'l1']))
     A = pd.Series(dataset1.loc[:, 'sensitive_features'], name='sensitive_features')
-    L = pd.DataFrame(columns=['l0', 'l1'])
+    L = pd.DataFrame(dataset1.loc[:, ['l0', 'l1']])
 
-    for index, value in _y.items():
-        if value == 0:
-            L.at[index, _L0] = 0
-            L.at[index, _L1] = 1
-        elif value == 1:
-            L.at[index, _L0] = 1
-            L.at[index, _L1] = 0
-        else:
-            print('ERROR')
 
     expgrad_XA = ExponentiatedGradient(
         dataset1,
@@ -140,6 +130,8 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
         L,
         sensitive_features=A)
 
-    scores_expgrad_XA = pd.Series(expgrad_XA.predict(xa_test), name="scores_expgrad_XA")
+    dec_prob = expgrad_XA.predict(xa_test)
+    scores = pd.Series(dec_prob[:, 0], name="scores_expgrad_XA").astype(int)
 
-    statistics2.get_stats(y_test, scores_expgrad_XA, a_test)
+    acc, mean_pred, parity, FPR, TPR, EO, util = statistics2.get_stats(y_test, scores, a_test)
+    statistics2.save_stats(acc, mean_pred, parity, FPR, TPR, EO, util, scores)

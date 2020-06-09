@@ -5,9 +5,12 @@ mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
 from src.contextual_bandit import Argmin
-from src.contextual_bandit.Evaluation import Evaluation
+from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot
+from src.evaluation.training_evaluation import Statistics
+from data.util import save_dictionary
+from src.evaluation.training_evaluation import UTILITY
+
 
 import os
 
@@ -19,14 +22,17 @@ class MiniMonster(object):
     Implementation of MiniMonster with a scikit_learn learning algorithm as the AMO.
     """
 
-    def __init__(self, B, fairness, dataset1, eps, nu):
+    def __init__(self, B, fairness, dataset1, eps, nu, TT):
         self.B = B
+        # XA, L, A, Y
         self.dataset1 = dataset1
         self.loss = []
         self.opt_loss = []
-        self.history = pd.DataFrame()
+        # XA, L, A
+        self.history = dataset1.drop(['label'], axis = 1)
+        # print('history', self.history)
         self.num_amo_calls = 0
-        self.mu = 0.01
+        self.mu = 0.1
         self.fairness = fairness
 
         self.eps = eps
@@ -35,7 +41,7 @@ class MiniMonster(object):
 
         ## Default training schedule is exponential
 
-        self.statistics = Evaluation()
+        self.statistics = Evaluation(TT)
 
         self.DP_dict = {}
         self.TPR_dict = {}
@@ -63,102 +69,96 @@ class MiniMonster(object):
         Q = []
         best_pi = None
 
-        # phase 2
 
-        # print('--- EVALUATION -- first log policy')
 
-        Y1 = self.dataset1.loc[:, 'label']
-        XA1 = self.dataset1.drop(columns=['sensitive_features', 'label'])
-        best_pi = LogisticRegression(solver='liblinear', fit_intercept=True)
-        best_pi.fit(XA1, Y1)
-        # print('Y1', Y1 )
-        # print('XA1', XA1)
+        # Y1 = self.dataset1.loc[:, 'label']
+        # XA1 = self.dataset1.drop(columns=['sensitive_features', 'label'])
+        # Todo: best_pi initially only on phase1 data needed to sample before updating
+        best_pi  = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1)
+        print('--- EVALUATION --  first best policy')
         self.statistics.evaluate(best_pi)
+        # print('--- EVALUATION -- comparison: logReg')
+        # self.statistics.evaluate(log_Reg)
 
         training_points = []
         i = 4
+        # print('batch', batch)
         if batch == "exp":
             while True:
                 training_points.append(int(np.sqrt(2) ** i))
                 i += 1
                 if np.sqrt(2) ** i > T:
                     break
-        if batch == 'lin':
+        elif batch == 'lin':
             ## Switch to linear training schedule with step 100
+            # Todo: let lin100 run linear with batch size 100
             training_points = [50]
             i = 1
             while True:
+                batchsize = int(batchsize)
                 training_points.append(int(i * batchsize))
                 i += 1
-                if i * 100 > T:
+                if i * batchsize > T:
                     break
+        elif batch == 'warm_start':
+           # Todo: implement warm start schedule
+            a=0
         else:
             while True:
                 training_points.append(int(i))
                 i += 1
                 if i > T:
                     break
-
+        # print('training_points', training_points)
 
         while t < T + 1:
-            # print('------- Phase 2: Time t = ', t, '--- new data point-----------')
 
-            # DF, S, S
             xa, y, a = self.B.get_new_context()
-
             XA = XA.append(xa, ignore_index=True)
             A = A.append(a, ignore_index=True)
 
-
             d, p = self.sample(xa, Q, best_pi, m)
-            #print('d', d)
             l = self.B.get_loss(d, y)
 
             # IPS loss, attention: order of columns might change
             # sometimes [l1, l0], sometimes [l0, l1]
-            full_lvec = pd.DataFrame()
-            # print('l', l)
-            # print('p', p)
-            full_lvec.at[0, d] = l[d] / p[d]
-            full_lvec.at[0, 1 - d] = l[1 - d] / p[1 - d]
-            full_lvec.rename(columns={0: 'l0', 1: 'l1'}, inplace=True)
-            # print('full_lvec', full_lvec)
-            L = L.append(full_lvec, ignore_index=True)
+            ips_loss = pd.DataFrame()
+            #print('d', d)
+            ips_loss.at[0,str(d)] = l / p
+            ips_loss.at[0, str(1-d)] = 0
+            #print('ips_loss', ips_loss)
 
+            ips_loss = ips_loss.rename(columns={'0':'l0','1':'l1'})
 
+            L = L.append(ips_loss, ignore_index=True)
 
-
-            # # kind of batch formula defined here
-            # if batch == "exp":
-            #     tau_m = 2 ** (m - 1)
-            # elif batch.startswith('lin'):
-            #     #batchsize = [int(s) for s in batch.split() if s.isdigit()][0]
-            #     batchsize = 500
-            #     tau_m = batchsize * m
-            # elif batch == "none":
-            #     tau_m = t
-            # else:
-            #     print('error in defining batch')
 
             # ---------- update batch (only push new ones) --------
-            # if t == tau_m:
-            if t >= 10 and t in training_points:
-                print('--- batch update', m, 'at time', t)
+            if t in training_points:
+                # print('t in training_points', t, 'in', training_points)
 
                 dataset2_batch = pd.concat([XA, L, A], axis=1)
 
-                self.history = self.history.append(dataset2_batch, ignore_index=True)
-                print('--- EVALUATION -- batch update: best policy')
-                best_pi, log_Reg = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1, self.history)
-                self.statistics.evaluate(best_pi)
-                print('--- EVALUATION -- comparison: logReg')
-                self.statistics.evaluate(log_Reg)
 
-                assert best_pi != None, 'no best_pi returned'
+                # print('--- EVALUATION -- batch update ', m, 'at time', t, 'with', dataset2_batch)
+
+                # assert best_pi != None, 'no best_pi returned'
+
+
+                best_pi = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1, dataset2_batch)
                 self.num_amo_calls += 1
+                print('--- EVALUATION -- batch update ', m, 'at time', t, 'best policy')
+                self.statistics.evaluate(best_pi)
+                # print('--- EVALUATION -- comparison: logReg')
+                # self.statistics.evaluate(log_Reg)
 
-                Q, best_pi = self._solve_op(self.history, t, best_pi)
 
+                self.history = self.history.append(dataset2_batch, ignore_index=True)
+                # print('self.history after', self.history)
+
+                Q = self._solve_op(self.history, t, best_pi)
+
+                # clear batch containers
                 XA = pd.DataFrame()
                 A = pd.Series(name='sensitive_features')
                 L = pd.DataFrame()
@@ -169,6 +169,7 @@ class MiniMonster(object):
             self.loss.append(l)
             l1.append(np.sum(self.loss) / t)
 
+            # Todo: implement loss and regret computation
             # in hindsight, best policy loss
             # xa is DF
             # if best_pi != None:
@@ -198,6 +199,45 @@ class MiniMonster(object):
         # plt.ylabel('some numbers')
         # plt.show()
 
+        # ------ saving ------
+        base_save_path = Path.cwd() / 'results'
+        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+        timestamp = time.gmtime()
+        ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+        base_save_path = "{}/{}".format(base_save_path, ts_folder)
+        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+        # print('data to print', data)
+
+
+        print('---- Floyds stats ----')
+
+
+        # ------ statistics from Floyd -------
+        decisions = self.statistics.scores_array
+        a_test = self.statistics.a_test.to_frame().to_numpy()
+        y_test = self.statistics.y_test.to_frame().to_numpy()
+
+        # print('decisions', decisions)
+        # print('y_test', y_test)
+        # print('a_test', a_test)
+
+        updates = len(self.statistics.acc_list_overall)
+
+        stats = Statistics(
+            predictions=decisions,
+            protected_attributes=a_test,
+            ground_truths=y_test,
+            additonal_measures= {UTILITY: {'measure_function': lambda s, y, decisions : np.mean(decisions * (y - 0.5)),
+            'detailed': False}})
+
+        save_and_plot_results(
+            base_save_path=base_save_path,
+            statistics=stats, update_iterations = updates)
+
+        print('---- My stats ----')
+
+        #---- my stats -----
         accuracy = self.statistics.acc_list_overall
         mean_pred = self.statistics.mean_pred_overall_list
         util = self.statistics.util_list
@@ -211,28 +251,26 @@ class MiniMonster(object):
         # print('utility', util)
         data = {'ACC': acc_dict, 'mean_pred': pred_dict, 'Utility': util, 'DP': DP, 'TPR': TPR, 'EO': EO}
 
-        base_save_path = Path.cwd() / 'results'
-        Path(base_save_path).mkdir(parents=True, exist_ok=True)
-        timestamp = time.gmtime()
-        ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
-        base_save_path = "{}/{}".format(base_save_path, ts_folder)
-        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+
+
+        # ------ plotting & saving ------
         parameter_save_path = "{}/parameters.json".format(base_save_path)
-        # print('data to print', data)
-        Evaluation.save_dictionary(data, parameter_save_path)
+        save_dictionary(data, parameter_save_path)
+        my_plot(base_save_path, util, accuracy, DP, EO)
 
-        fig_train = plt.figure()
-        # It's the arrangement of subgraphs within this graph. The first number is how many rows of subplots; the second number is how many columns of subplots; the third number is the subgraph you're talking about now. In this case, there's one row and one column of subgraphs (i.e. one subgraph) and the axes are talking about the first of them. Something like fig.add_subplot(3,2,5) would be the lower-left subplot in a grid of three rows and two columns
-        ax1_train = fig_train.add_subplot(111)
-        ax1_train.scatter(range(0, len(accuracy)), accuracy, label='accuracy')
-        ax1_train.scatter(range(0, len(DP)), DP, label='DP')
-        plt.xlabel("iterations")
-        plt.ylabel("DP/accuracy")
-        plt.title('Full Bandit Run')
-        plt.legend()
-        plt.savefig(base_save_path + '/plot.png')
+        # fig_train = plt.figure()
+        # # It's the arrangement of subgraphs within this graph. The first number is how many rows of subplots; the second number is how many columns of subplots; the third number is the subgraph you're talking about now. In this case, there's one row and one column of subgraphs (i.e. one subgraph) and the axes are talking about the first of them. Something like fig.add_subplot(3,2,5) would be the lower-left subplot in a grid of three rows and two columns
+        # ax1_train = fig_train.add_subplot(111)
+        # ax1_train.scatter(range(0, len(accuracy)), accuracy, label='accuracy')
+        # ax1_train.scatter(range(0, len(DP)), DP, label='DP')
+        # plt.xlabel("iterations")
+        # plt.ylabel("DP/accuracy")
+        # plt.title('Full Bandit Run')
+        # plt.legend()
+        # plt.savefig(base_save_path + '/plot.png')
 
-
+        # ------ retun statement ------
         return l1, l2, Q, best_pi
 
     # def predict(self, X, Q, best_pi):
@@ -275,41 +313,47 @@ class MiniMonster(object):
         # best_pi = Policy
 
         p = np.zeros(2)
-
         if Q == []:
-            dec = best_pi.predict(x)
-            # print('first pi dec',dec)
-            # print('sample: Q', Q)
-            # print('sample: best_pi get_decision', dec)
-            # dec = np.random.choice(2, size=1)
-            p[dec] = 1
-            p[1 - dec] = 0
+            dec_prob = best_pi.predict(x)
+            dec = int(dec_prob[0,0])
+            prob = dec_prob[0,1]
+            p[dec] = prob
 
         else:
             for item in Q:
                 pi = item[0]
                 w = item[1]
-                p[pi.get_decision(x)] += w
+                # print('w in Q', w)
+                dec_prob = pi.get_decision(x).squeeze()
+                # print('dec_prob', dec_prob)
+                dec = int(dec_prob[0])
+                prob = dec_prob[1]
+                p[dec] += w*prob
+                p[1-dec]+=w*(1-prob)
 
             ## Mix in leader
-            dec = best_pi.get_decision(x)
-            # print('sample: best_pi get_decision', dec)
+            dec_prob = best_pi.get_decision(x).squeeze()
+            dec = int(dec_prob[0])
+            prob = dec_prob[1]
+
             w = 1 - np.sum([q[1] for q in Q])
-            p[dec] += w
-            # print('sample: after mix in leader', p)
+            p[dec] += w*prob
+            p[1-dec] +=w*(1-prob)
 
         # in paper:
+        # print('p before mixing in', p)
         p = (1 - 2 * self._get_mu(t)) * p + self._get_mu(t)
-        # in code: p = (1 - self._get_mu(t)) * p + self._get_mu(t) / 2
+        # print('p after mixing in', p)
         ## Take decision
-        # print('sample: after mix in mu', p)
 
-        assert p[1] >= 0 and p[1] <= 1, 'probability needs to be [0,1]'
-        dec = np.random.binomial(1, p[1])
+        # assert p[1] >= 0 and p[1] <= 1 and p[1]+p[0] <=1, 'probability needs to be [0,1]'
 
-        dec = int(dec)
 
-        return dec, p
+        dec = (p[1] >= np.random.rand(1)) * 1
+        dec = dec.squeeze()
+
+
+        return dec, p[dec]
 
     def _get_mu(self, t):
         """
@@ -321,37 +365,27 @@ class MiniMonster(object):
         # b = self.mu * np.sqrt(2) / np.sqrt(t)
         # c = np.min([a, b])
         # return np.min([1, c])
-        return 0.01
+        return 0.1
 
     def _solve_op(self, H, t, best_pi, Q=None):
         """
         Main optimization logic for MiniMonster.
         """
         print('----- BEGIN SOLVE OP ----------')
-        H = H
-        # print('_solve_op: H', H)
         mu = self._get_mu(t)
-        # print('mu', mu)
-        # print('_solve_op: mu', mu)
+
+        # Todo: implement warm start option
         Q = []  ## self.weights
         # ## Warm-starting Q = Q
-        # psi set in code to 1
+
         psi = 1
-
-        # ------ added by me
-        t = t
-        best_pi = best_pi
-
-        # ------------------
-
         predictions = {}
-
         leader_loss, predictions = self.get_loss(H, best_pi, predictions, t)
-        # print('_solve_op: leader_loss', leader_loss)
-        # print('_solve_op: predictions', predictions)
 
-        # only makes sense, if it is a warm start, otherwise Q is empty anyway
+
+
         q_losses = {}
+        # only makes sense, if it is a warm start, otherwise Q is empty anyway
         # for item in Q:
         #     pi = item[0]
         #     (tmp,predictions) = self.get_loss(H, pi, predictions, features=features)
@@ -393,9 +427,11 @@ class MiniMonster(object):
                 # q = self._marginalize(Q, x, pred)
                 q = np.zeros(2, dtype=np.longfloat)
                 for item in Q:
+                    # print('item', item)
                     pi = item[0]
                     w = item[1]
-                    q[predictions[pi][i]] += w
+                    # print('predictions[pi][i][0]', predictions[pi][i][0])
+                    q[int(predictions[pi][i][0])] += w
                 q = (1.0 - mu) * q + (mu) / 2
                 # print('MM: q', q)
 
@@ -432,7 +468,7 @@ class MiniMonster(object):
             ## AMO call
             # print('----- AMO 2 ----------')
             # print('--- EVALUATION -- loop update: high variance')
-            pi, _ = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1, Dpimin_dataset)
+            pi = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1, Dpimin_dataset)
             self.num_amo_calls += 1
             # print('----- END AMO 2 ----------')
 
@@ -469,26 +505,32 @@ class MiniMonster(object):
             #     return Q, best_pi
 
         print('----- END SOLVE OP ----------')
-        return Q, best_pi
+        return Q
 
     def get_loss(self, dataset, pi, predictions, t):
         # H: DF, best_pi: Policy, pred: dict, t:int, feat:DF
 
-        t = t
+        # print('predictions', dataset.index)
+        # print('pi.get_all_decisions(dataset.iloc[:, 0:2])', pi.get_all_decisions(dataset.iloc[:, 0:2]))
 
         if pi not in predictions.keys():
             ## This is going to go horribly wrong if dataset is not the right size
-            assert len(dataset) == t, "If predictions not yet cached, dataset should have len = self.t"
+            # assert len(dataset) == t, "If predictions not yet cached, dataset should have len = self.t"
             # predictions[pi] = dict(zip([i for i in dataset.index], pi.get_all_decisions([row for index, row in dataset.iloc[:,0:2].iterrows()])))
+            # Todo FIX THIS: danger with other datasets selecting only first two columns
             predictions[pi] = dict(zip([i for i in dataset.index], pi.get_all_decisions(dataset.iloc[:, 0:2])))
 
+
+        # print('predictions', predictions)
         score = 0.0
         for i in dataset.index:
             x = i
             l = dataset.filter(items=['l0', 'l1']).iloc[i, :]
             l = l.rename({'l0': 0, 'l1': 1})
 
-            pred = predictions[pi][x]
-            score += l.loc[pred]
+            pred, prob = predictions[pi][x]
+            score += l.loc[pred]*prob
 
         return score, predictions
+
+
