@@ -208,8 +208,6 @@ if __name__ == "__main__":
     # print('args.build_submit', args.build_submit)
 
     if args.build_submit:
-        print('args', args)
-        print('base_path', base_path)
         _build_submit_file(args, base_save_path)
     else:
         _multi_run(args, base_save_path)
