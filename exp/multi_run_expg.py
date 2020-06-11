@@ -89,6 +89,7 @@ def _build_submit_file(args, base_path):
                                       "-f {} " \
                                       "-eps {} " \
                                       "-nu {} " \
+                                      "-p {}" \
                                       "{} " \
                                       "{} ".format(time_steps_1,
                                                   time_steps_2,
@@ -96,6 +97,7 @@ def _build_submit_file(args, base_path):
                                                   args.fairness_type,
                                                   eps,
                                                   nu,
+                                                  base_path,
                                                   "--plot " if args.plot else "",
                                                   "-pid $(Process)" if args.queue_num else "")
 
