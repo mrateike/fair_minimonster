@@ -60,7 +60,7 @@ if __name__ == "__main__":
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
 
-    T = 5
+    T = 100
     i = 0
     seed_test = get_list_of_seeds(1)
     statistics = Evaluation(args.time_steps_testing, seed_test)
