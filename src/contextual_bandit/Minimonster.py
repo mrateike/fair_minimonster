@@ -207,6 +207,13 @@ class MiniMonster(object):
         base_save_path = "{}/{}".format(base_save_path, ts_folder)
         Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
+        # err_path = "{}/error".format(base_save_path)
+        # Path(err_path).mkdir(parents=True, exist_ok=True)
+        # log_path = "{}/log".format(base_save_path)
+        # Path(log_path).mkdir(parents=True, exist_ok=True)
+        # output_path = "{}/output".format(base_save_path)
+        # Path(output_path).mkdir(parents=True, exist_ok=True)
+
         # print('data to print', data)
 
 

@@ -46,6 +46,8 @@ if root_path not in sys.path:
 
 
 def _build_submit_file(args, base_path):
+
+
     print('///// In build submit /////')
     sub_file_name = "./{}.sub".format('Uncalibrated') if args.fairness_type is None else "./{}_{}.sub".format('Uncalibrated',
                                                                                                          args.fairness_type)
@@ -206,7 +208,7 @@ if __name__ == "__main__":
 
     # base_path = "{}/{}".format(args.path, 'Uncalibrated_DP')
 
-    # print('args.build_submit', args.build_submit)
+    print('args.build_submit', args.build_submit)
 
     timestamp = time.gmtime()
     ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
@@ -214,8 +216,14 @@ if __name__ == "__main__":
     base_save_path = "{}/{}_{}".format(args.path, ts_folder, ex_folder)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
+    err_path = "{}/error".format(base_save_path)
+    Path(err_path).mkdir(parents=True, exist_ok=True)
+    log_path = "{}/log".format(base_save_path)
+    Path(log_path).mkdir(parents=True, exist_ok=True)
+    output_path = "{}/output".format(base_save_path)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
 
     if args.build_submit:
-        _build_submit_file(args, args.path)
+        _build_submit_file(args, base_save_path)
     else:
         _multi_run(args, args.path)
