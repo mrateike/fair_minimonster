@@ -22,7 +22,7 @@ class MiniMonster(object):
     Implementation of MiniMonster with a scikit_learn learning algorithm as the AMO.
     """
 
-    def __init__(self, B, fairness, dataset1, eps, nu, TT):
+    def __init__(self, B, fairness, dataset1, eps, nu, TT, seed):
         self.B = B
         # XA, L, A, Y
         self.dataset1 = dataset1
@@ -41,7 +41,7 @@ class MiniMonster(object):
 
         ## Default training schedule is exponential
 
-        self.statistics = Evaluation(TT)
+        self.statistics = Evaluation(TT, seed)
 
         self.DP_dict = {}
         self.TPR_dict = {}

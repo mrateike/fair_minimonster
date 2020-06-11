@@ -11,13 +11,14 @@ import time
 from sklearn.linear_model import LogisticRegression
 from src.evaluation.Evaluation import Evaluation
 import numpy as np
+from data.util import get_list_of_seeds
 
 # class Runtime(object):
 
 def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
-
-    statistics1 = Evaluation(TT)
-    statistics2 = Evaluation(TT)
+    seed = get_list_of_seeds(1)
+    statistics1 = Evaluation(TT, seed)
+    statistics2 = Evaluation(TT, seed)
     # # shifts = True (DP), shifts = False (TPR, EOdds)
     if fairness == "TPR":
         fairness = TruePositiveRateDifference()
@@ -33,7 +34,7 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
     # returns: XA, L(l0, l1), A, Y
     dataset1 = B.get_new_context_set(T1)
 
-    M = MiniMonster(B, fairness, dataset1, eps, nu, TT)
+    M = MiniMonster(B, fairness, dataset1, eps, nu, TT, seed)
 
     print("------------- start fit ---------------")
     start = time.time()
