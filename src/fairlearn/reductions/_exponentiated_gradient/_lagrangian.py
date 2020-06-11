@@ -8,9 +8,10 @@ import pickle
 import scipy.optimize as opt
 from sklearn.dummy import DummyClassifier
 from time import time
+from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity
 
 from ._constants import _PRECISION, _INDENTATION, _LINE
-
+from src.fairlearn.reductions._bechavod.classifier_family import ClassifierFamily
 
 logger = logging.getLogger(__name__)
 import copy
@@ -63,7 +64,8 @@ class _Lagrangian:
 
             y_loss2 = copy.deepcopy(y_loss)
 
-            self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
+            if type(constraints) is DemographicParity:
+                self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
 
             self.obj.load_data(X, y_loss2)
 
@@ -78,14 +80,14 @@ class _Lagrangian:
         self.errorsH = pd.Series()
         self.gammasH = pd.DataFrame()
 
-        # h_family = ClassifierFamily()
-        # self.classifiersH = h_family.classifiers
-        # h_idx = 0
-        # for h in h_family.classifiers:
-        #     self.hsH.at[h_idx] = h
-        #     self.errorsH.at[h_idx] = self.obj.gamma(h)
-        #     self.gammasH[h_idx] = self.constraints.gamma(h)
-        #     h_idx += 1
+        h_family = ClassifierFamily()
+        self.classifiersH = h_family.classifiers
+        h_idx = 0
+        for h in h_family.classifiers:
+            self.hsH.at[h_idx] = h
+            self.errorsH.at[h_idx] = self.obj.gamma(h)
+            self.gammasH[h_idx] = self.constraints.gamma(h)
+            h_idx += 1
 
         self.pickled_estimator = pickle.dumps(estimator)
         self.eps = eps[0]
@@ -225,15 +227,15 @@ class _Lagrangian:
         h_value = h_error + h_gamma.dot(lambda_vec)
 
 
-        # valuesH = self.errorsH + self.gammasH.transpose().dot(lambda_vec)
-        # best_idxH = valuesH.idxmin()
-        # best_valueH = valuesH[best_idxH]
-        # if best_valueH < h_value:
-        #     h_value = best_valueH
-        #     h = self.hsH.at[best_idxH]
-        #     classifier = self.classifiersH.at[best_idxH]
-        #     h_error = self.errorsH.at[best_idxH]
-        #     h_gamma = self.gammasH.iloc[:, best_idxH]
+        valuesH = self.errorsH + self.gammasH.transpose().dot(lambda_vec)
+        best_idxH = valuesH.idxmin()
+        best_valueH = valuesH[best_idxH]
+        if best_valueH < h_value:
+            h_value = best_valueH
+            h = self.hsH.at[best_idxH]
+            classifier = self.classifiersH.at[best_idxH]
+            h_error = self.errorsH.at[best_idxH]
+            h_gamma = self.gammasH.iloc[:, best_idxH]
 
         if not self.hs.empty:
             values = self.errors + self.gammas.transpose().dot(lambda_vec)

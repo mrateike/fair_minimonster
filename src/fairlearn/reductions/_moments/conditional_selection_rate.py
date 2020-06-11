@@ -114,12 +114,13 @@ class ConditionalSelectionRate(ClassificationMoment):
         # utility_diff = self.utilities[:, 1] - self.utilities[:, 0]
         # pred = utility_diff.T * predictor(self.X1) + self.utilities[:, 0]
 
-        pred = predictor(self.X1)
-        self.tags1[_PREDICTION] = pred
+        pred = predictor(self.X_all)
+        # print('pred', pred)
+        self.tags_all[_PREDICTION] = pred
 
-        expect_event = self.tags1.groupby(_EVENT).mean()
+        expect_event = self.tags_all.groupby(_EVENT).mean()
 
-        expect_group_event = self.tags1.groupby(
+        expect_group_event = self.tags_all.groupby(
             [_EVENT, _GROUP_ID]).mean()
 
         expect_group_event[_DIFF] = expect_group_event[_PREDICTION] - expect_event[_PREDICTION]

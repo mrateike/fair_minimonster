@@ -39,7 +39,7 @@ class ErrorRate(ClassificationMoment):
 
 
     def gamma(self, predictor):
-        """Return the gamma values for the given predictor."""
+        """Return the gamma values for the given predictor. predictor is always a classifier h"""
         # evaluated on both datasets
         pred = predictor(self.X_all)
         # print('pred', pred)

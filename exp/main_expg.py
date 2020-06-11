@@ -7,7 +7,7 @@ root_path = os.path.abspath(os.path.join("."))
 if root_path not in sys.path:
     sys.path.append(root_path)
 
-from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity
+from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity, TruePositiveRateDifference
 from src.fairlearn.reductions._exponentiated_gradient.run_expg import play
 from src.evaluation.Evaluation import Evaluation, my_plot
 from data.util import save_dictionary
@@ -73,6 +73,8 @@ if __name__ == "__main__":
 
     if args.fairness_type == 'DP':
         fairness = DemographicParity()
+    elif args.fairness_type == 'EO':
+        fairness = TruePositiveRateDifference()
 
 
 
