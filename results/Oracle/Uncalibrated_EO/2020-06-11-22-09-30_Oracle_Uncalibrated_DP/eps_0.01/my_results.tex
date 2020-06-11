@@ -1,0 +1,188 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={utility},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-1.1, xmax=23.1,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.0275, ymax=0.055,
+ytick style={color=black},
+ytick={-0.04,-0.02,0,0.02,0.04,0.06},
+yticklabels={−0.04,−0.02,0.00,0.02,0.04,0.06}
+]
+\addplot [semithick, color0]
+table {%
+0 0.000416666666666667
+1 0.0475
+2 0.03125
+3 0.03125
+4 0.0166666666666667
+5 0.0129166666666667
+6 0.00208333333333333
+7 0.02
+8 0.0304166666666667
+9 0.0233333333333333
+10 0.0366666666666667
+11 0.00166666666666667
+12 0.0354166666666667
+13 0.0254166666666667
+14 -0.00958333333333333
+15 0.05125
+16 0.0025
+17 0.0304166666666667
+18 0.00708333333333333
+19 -0.02375
+20 0.0220833333333333
+21 -0.0120833333333333
+22 0.0025
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={accuracy},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-1.1, xmax=23.1,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.648333333333333, ymax=0.813333333333333,
+ytick style={color=black},
+ytick={0.6,0.65,0.7,0.75,0.8,0.85},
+yticklabels={0.60,0.65,0.70,0.75,0.80,0.85}
+]
+\addplot [semithick, color0]
+table {%
+0 0.704166666666667
+1 0.798333333333333
+2 0.765833333333333
+3 0.765833333333333
+4 0.736666666666667
+5 0.729166666666667
+6 0.7075
+7 0.743333333333333
+8 0.764166666666667
+9 0.75
+10 0.776666666666667
+11 0.706666666666667
+12 0.774166666666667
+13 0.754166666666667
+14 0.684166666666667
+15 0.805833333333333
+16 0.708333333333333
+17 0.764166666666667
+18 0.7175
+19 0.655833333333333
+20 0.7475
+21 0.679166666666667
+22 0.708333333333333
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={demographic parity},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-1.1, xmax=23.1,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.00937877689146725, ymax=0.302027956290165,
+ytick style={color=black},
+ytick={-0.1,0,0.1,0.2,0.3,0.4},
+yticklabels={−0.1,0.0,0.1,0.2,0.3,0.4}
+]
+\addplot [semithick, color0]
+table {%
+0 0.165412217748994
+1 0.165220507947622
+2 0.109983079526227
+3 0.0386503629983413
+4 0.15336784109758
+5 0.0881281621698216
+6 0.00477607461678878
+7 0.115692697523609
+8 0.0917123019346019
+9 0.157302059630083
+10 0.0170038258608187
+11 0.00980220549623665
+12 0.062855809223742
+13 0.0426012519483551
+14 0.287873104781909
+15 0.0483858868245355
+16 0.0603135705533745
+17 0.196469205571253
+18 0.0143782351028982
+19 0.101081076575563
+20 0.26618489160061
+21 0.100080851524926
+22 0.0327406999908313
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={false positive rate},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-1.1, xmax=23.1,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.0158522995880327, ymax=0.342803516354877,
+ytick style={color=black},
+ytick={-0.1,0,0.1,0.2,0.3,0.4},
+yticklabels={−0.1,0.0,0.1,0.2,0.3,0.4}
+]
+\addplot [semithick, color0]
+table {%
+0 0.207075482316922
+1 0.102181400688863
+2 0.0668827806668017
+3 0.0930190675581369
+4 0.202989577001868
+5 0.136489498210306
+6 0.00497512437810945
+7 0.153440940095901
+8 0.0444722090902951
+9 0.103509601314694
+10 0.0794444069246527
+11 0.00497512437810945
+12 0.0150829562594268
+13 0.00912856531820533
+14 0.326500979266563
+15 0.00388329843992706
+16 0.0935255847459535
+17 0.1363206591477
+18 0.000450237500281398
+19 0.141520902275951
+20 0.214121699196326
+21 0.11684788726053
+22 0.0176380540735238
+};
+\end{groupplot}
+
+\end{tikzpicture}

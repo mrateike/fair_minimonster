@@ -70,6 +70,8 @@ class ConditionalSelectionRate(ClassificationMoment):
             self.tags[_GROUP_ID] = kwargs[_KW_SENSITIVE_FEATURES]
         self.tags[_EVENT] = event
 
+        # print('phase 2 data', self.tags)
+
 
         # construct a joint table
         self.X_all = pd.concat([self.X_all, self.X], axis = 0, ignore_index=True)
@@ -87,6 +89,8 @@ class ConditionalSelectionRate(ClassificationMoment):
         if _KW_SENSITIVE_FEATURES in kwargs:
             self.tags_all[_GROUP_ID] = kwargs[_KW_SENSITIVE_FEATURES]
         self.tags_all[_EVENT] = event
+
+        # print('phase 1 data', self.tags_all)
 
         # oracle construction
         self.calculate_probs()
@@ -181,6 +185,7 @@ class ConditionalSelectionRate(ClassificationMoment):
         # ----- option for learning on only fair on phase 1 -------
         # signed_weights = self.tags1.apply(
         #  ----- option for learning on fair on all data (DP) -------
+
         signed_weights = self.tags_all.apply(
             lambda row: 0 if pd.isna(row[_EVENT]) else adjust[row[_EVENT], row[_GROUP_ID]], axis=1)
         return signed_weights
@@ -279,8 +284,9 @@ class TruePositiveRateDifference(ConditionalSelectionRate):
 
     def load_data1(self, X, y, **kwargs):
         """Load the specified data into the object."""
+        event = pd.Series(y.squeeze().to_numpy()).apply(lambda y: _LABEL + "=" + str(y) if y == 1 else float('NaN'))
         super().load_data1(X, y,
-                          event=pd.Series(y).apply(lambda y: _LABEL + "=" + str(y)).where(y == 1),
+                          event=event,
                           **kwargs)
 
 class EqualizedOdds(ConditionalSelectionRate):

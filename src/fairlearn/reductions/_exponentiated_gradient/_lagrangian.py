@@ -64,8 +64,8 @@ class _Lagrangian:
 
             y_loss2 = copy.deepcopy(y_loss)
 
-            if type(constraints) is DemographicParity:
-                self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
+            # if type(constraints) is DemographicParity:
+            self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
 
             self.obj.load_data(X, y_loss2)
 
@@ -184,11 +184,15 @@ class _Lagrangian:
         # without fair learning h
         #signed_weights = self.obj.signed_weights()
         # fair learning h
+
+        # print('err_C:', self.obj.signed_weights())
+        # print('gamma_C: ', self.constraints.signed_weights(lambda_vec))
         signed_weights = self.obj.signed_weights() + self.constraints.signed_weights(lambda_vec)
         redY = 1 * (signed_weights > 0)
         redW = signed_weights.abs()
 
         # Origignal was imposing n as a parameter for reweighting?
+
         redW = redY.shape[0] * redW / redW.sum()
         # print('call oracle: redY.shape[0]', redY.shape[0])
 
@@ -204,7 +208,6 @@ class _Lagrangian:
         classifier = pickle.loads(self.pickled_estimator)
 
         oracle_call_start_time = time()
-        # print('call oracle: self.X_all, redY, redW', self.X_all, redY, redW)
         classifier.fit(self.X_all, redY, sample_weight=redW)
 
         self.oracle_execution_times.append(time() - oracle_call_start_time)
