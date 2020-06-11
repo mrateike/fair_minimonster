@@ -8,6 +8,7 @@ from .._exponentiated_gradient.exponentiated_gradient  import ExponentiatedGradi
 import numpy as np
 import pandas as pd
 import matplotlib as mpl
+#TkAgg
 mpl.use('TkAgg')
 import matplotlib.pyplot as plt
 

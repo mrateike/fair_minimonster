@@ -15,6 +15,7 @@ from statistics import mean
 from data.distribution import UncalibratedScore
 from data.util import get_list_of_seeds
 
+
 import matplotlib as mpl
 mpl.use('TkAgg')
 import matplotlib.pyplot as plt
