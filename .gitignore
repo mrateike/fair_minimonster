@@ -1,4 +1,4 @@
-
+.results
 .idea
 .save
 # Byte-compiled / optimized / DLL files
@@ -8,6 +8,7 @@ __pycache__/
 
 # C extensions
 *.so
+*.csv
 
 # Distribution / packaging
 .Python
