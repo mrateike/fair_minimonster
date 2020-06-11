@@ -45,6 +45,9 @@ if __name__ == "__main__":
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
                         help="list of accuracy parameters of the oracle to be used")
 
+    parser.add_argument('-mu', '--mu', type=float, required=True,
+                        help="minimum probability for simulating the bandit")
+
     # Configuration parameters
     # parser.add_argument('-d', '--data', type=str, required=False,
     #                     help="select the distribution (FICO, COMPAS, ADULT, GERMAN, Uncalibrated)")
@@ -83,7 +86,7 @@ if __name__ == "__main__":
 
     while i < T:
         print('I am computing policy ', i)
-        results_dict, decisions =  play(args.time_steps_1, args.time_steps_2, fairness, args.eps, args.nu, statistics, seeds_training)
+        results_dict, decisions =  play(args.time_steps_1, args.time_steps_2, fairness, args.eps, args.nu, statistics, seeds_training, args.mu)
 
         parameter_save_path = "{}/evaluation.json".format(base_save_path)
         save_dictionary(results_dict, parameter_save_path)

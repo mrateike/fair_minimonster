@@ -91,6 +91,7 @@ def _build_submit_file(args, base_path):
                                       "-f {} " \
                                       "-eps {} " \
                                       "-nu {} " \
+                                      "-mu {}" \
                                       "-p {}" \
                                       "{} " \
                                       "{} ".format(time_steps_1,
@@ -99,6 +100,7 @@ def _build_submit_file(args, base_path):
                                                   args.fairness_type,
                                                   eps,
                                                   nu,
+                                                  args.mu,
                                                   base_path,
                                                   "--plot " if args.plot else "",
                                                   "-pid $(Process)" if args.queue_num else "")
@@ -121,8 +123,6 @@ def _multi_run(args, base_path):
     # this is called when executed
 
 
-
-
     # Path(base_save_path).mkdir(parents=True, exist_ok=True)
     for time_steps_1 in args.time_steps_1:
             for time_steps_2 in args.time_steps_2:
@@ -135,7 +135,8 @@ def _multi_run(args, base_path):
                                    "-f", str(args.fairness_type),
                                    "-eps", str(eps),
                                    "-nu", str(nu),
-                                   "-p", str(base_save_path)
+                                   "-mu", str(args.mu),
+                                   "-p", str(base_path)
                                    ]
                         if args.plot:
                             command.append("--plot")
@@ -177,6 +178,9 @@ if __name__ == "__main__":
                         help="list of statistical unfairness paramenters to be used")
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
                         help="list of accuracy parameters of the oracle to be used")
+
+    parser.add_argument('-mu', '--mu', type=float, required=True,
+                        help="minimum probability for simulating the bandit")
 
     # Configuration parameters
     # parser.add_argument('-d', '--data', type=str, required=True,
