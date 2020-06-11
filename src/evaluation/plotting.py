@@ -9,7 +9,7 @@ if root_path not in sys.path:
 
 import matplotlib
 
-matplotlib.use('TkAgg')
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 

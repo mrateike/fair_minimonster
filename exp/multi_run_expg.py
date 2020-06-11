@@ -119,11 +119,7 @@ def _multi_run(args, base_path):
     # this is called when executed
 
 
-    timestamp = time.gmtime()
-    ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
-    ex_folder = 'Oracle_Uncalibrated_DP'
-    base_save_path = "{}/{}_{}".format(base_path, ts_folder, ex_folder)
-    Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
 
     # Path(base_save_path).mkdir(parents=True, exist_ok=True)
     for time_steps_1 in args.time_steps_1:
@@ -211,6 +207,13 @@ if __name__ == "__main__":
     # base_path = "{}/{}".format(args.path, 'Uncalibrated_DP')
 
     # print('args.build_submit', args.build_submit)
+
+    timestamp = time.gmtime()
+    ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+    ex_folder = 'Oracle_Uncalibrated_DP'
+    base_save_path = "{}/{}_{}".format(args.path, ts_folder, ex_folder)
+    Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
 
     if args.build_submit:
         _build_submit_file(args, args.path)

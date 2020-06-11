@@ -17,7 +17,7 @@ from data.util import get_list_of_seeds
 
 
 import matplotlib as mpl
-mpl.use('TkAgg')
+mpl.use('Agg')
 import matplotlib.pyplot as plt
 
 import argparse
