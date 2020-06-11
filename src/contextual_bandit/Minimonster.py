@@ -200,7 +200,7 @@ class MiniMonster(object):
         # plt.show()
 
         # ------ saving ------
-        base_save_path = Path.cwd() / 'results'
+        base_save_path = Path.cwd() / 'results' / 'Oracle' / 'Uncalibrated_DP'
         Path(base_save_path).mkdir(parents=True, exist_ok=True)
         timestamp = time.gmtime()
         ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)

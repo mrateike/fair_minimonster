@@ -115,6 +115,15 @@ def _build_submit_file(args, base_path):
 
 def _multi_run(args, base_path):
     # this is called when executed
+
+
+    timestamp = time.gmtime()
+    ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+    ex_folder = 'Oracle_Uncalibrated_DP'
+    base_save_path = "{}/{}_{}".format(base_path, ts_folder, ex_folder)
+    Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+    # Path(base_save_path).mkdir(parents=True, exist_ok=True)
     for time_steps_1 in args.time_steps_1:
             for time_steps_2 in args.time_steps_2:
                 for nu in args.nu:
@@ -126,7 +135,7 @@ def _multi_run(args, base_path):
                                    "-f", str(args.fairness_type),
                                    "-eps", str(eps),
                                    "-nu", str(nu),
-                                   "-p", str(base_path)
+                                   "-p", str(base_save_path)
                                    ]
                         if args.plot:
                             command.append("--plot")
@@ -172,17 +181,11 @@ if __name__ == "__main__":
     # Configuration parameters
     # parser.add_argument('-d', '--data', type=str, required=True,
     #                     help="select the distribution (FICO, COMPAS, ADULT, GERMAN, Uncalibrated)")
-    base_save_path = Path.cwd() / 'results'
-    Path(base_save_path).mkdir(parents=True, exist_ok=True)
-    timestamp = time.gmtime()
-    ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
-    ex_folder = 'Oracle_Uncalibrated_DP'
-    base_save_path = "{}/{}_{}".format(base_save_path, ts_folder, ex_folder)
-    Path(base_save_path).mkdir(parents=True, exist_ok=True)
-    # Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
-    parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results", default= base_save_path)
+
+    parser.add_argument('-p', '--path', type=str, required=True, help="save path for the results")
     parser.add_argument('--plot', required=False, action='store_true')
+
 
 
 
@@ -208,6 +211,6 @@ if __name__ == "__main__":
     # print('args.build_submit', args.build_submit)
 
     if args.build_submit:
-        _build_submit_file(args, base_save_path)
+        _build_submit_file(args, args.path)
     else:
-        _multi_run(args, base_save_path)
+        _multi_run(args, args.path)
