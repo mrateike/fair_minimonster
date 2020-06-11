@@ -75,7 +75,7 @@ if __name__ == "__main__":
 
 
 
-    #phase 1 and phase 2 are different people
+    #phase 1 and phase 2 are different peopl
     seeds_training = get_list_of_seeds(2)
 
     while i < T:

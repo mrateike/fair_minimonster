@@ -182,12 +182,11 @@ if __name__ == "__main__":
     # Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
     parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results", default= base_save_path)
-
     parser.add_argument('--plot', required=False, action='store_true')
 
 
 
-    # Build script parameters
+    # Build script parameter
     parser.add_argument('--build_submit', required=False, action='store_true')
     # parser.add_argument('-pp', '--python_path', type=str, required=False, help="path of the python executable")
     parser.add_argument('-q', '--queue_num', type=int, required=False,
