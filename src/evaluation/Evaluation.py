@@ -17,17 +17,17 @@ import numbers
 from src.evaluation.training_evaluation import Statistics
 _L0 = "l0"
 _L1 = "l1"
-from src.fairlearn.metrics import mean_prediction_group_summary, accuracy_score_group_summary, accuracy2_score_group_summary, \
+from src.fairlearn.metrics import mean_prediction_group_summary, accuracy_score_group_summary, \
     equalized_odds_difference, demographic_parity_difference, demographic_parity_ratio, \
     equalized_odds_ratio, true_positive_rate_difference, true_positive_rate_ratio, \
-    false_positive_rate_difference, false_positive_rate_ratio, utility, accuracy2_score
+    false_positive_rate_difference, false_positive_rate_ratio, utility
 # import matplotlib.pyplot as plt
 from data.uncalibrated_score import UncalibratedScore
 from data.util import stack, serialize_dictionary, save_dictionary
 from src.evaluation.plotting import plot_median, plot_mean
 from src.evaluation.training_evaluation import UTILITY
 import matplotlib
-
+from data.util import get_list_of_seeds
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
@@ -37,9 +37,11 @@ import tikzplotlib as tpl
 
 
 class Evaluation(object):
-    def __init__(self, TT):
+    def __init__(self, TT, seed):
         # self.acc_dict ={'overall':{}, 0:{}, 1:{}}
         # self.mean_pred_dict = {'overall':{}, 0:{}, 1:{}}
+        # set seed
+
         self.DP_list = []
         self.TPR_list = []
         self.FPR_list = []
@@ -52,12 +54,13 @@ class Evaluation(object):
         self.mean_pred_1_list = []
         self.util_list = []
         self.stats_list = []
+        self.scores_dict = {}
         self.scores_array = None
-
+        self.i_scores = 0
 
         fraction_protected = 0.5
         distribution = UncalibratedScore(fraction_protected)
-        x_test, a_test, y_test = distribution.sample_test_dataset(TT)
+        x_test, a_test, y_test = distribution.sample_test_dataset(TT, seed[0])
         x_test = pd.DataFrame(x_test.squeeze())
         self.y_test = pd.Series(y_test.squeeze(), name='label')
         a_test = pd.Series(a_test.squeeze(), name='sensitive_features_X')
@@ -74,8 +77,10 @@ class Evaluation(object):
         scores = pd.Series(dec_prob[:,0], name="scores_expgrad_XA").astype(int)
 
         # cannot merge these two
-        acc, mean_pred, parity, FPR, TPR, EO, util = self.get_stats(self.y_test, scores, self.a_test)
-        self.save_stats(acc, mean_pred, parity, FPR, TPR, EO, util, scores)
+        # Todo: decisions
+
+        results_dict = self.get_stats(self.y_test, scores, self.a_test)
+        self.save_stats(results_dict, scores)
 
 
     def get_stats(self, y_test, scores, A_test):
@@ -97,34 +102,44 @@ class Evaluation(object):
 
         util = utility(y_test, scores)
 
-        parity = demographic_parity_difference(y_test, scores, sensitive_features=A_test)
-        ratio_parity = demographic_parity_ratio(y_test, scores, sensitive_features=A_test)
-
-        TPR = true_positive_rate_difference(y_test, scores, sensitive_features=A_test)
-        ratio_TPR = true_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
+        DP = demographic_parity_difference(y_test, scores, sensitive_features=A_test)
+        ratio_DP = demographic_parity_ratio(y_test, scores, sensitive_features=A_test)
 
         FPR = false_positive_rate_difference(y_test, scores, sensitive_features=A_test)
         ratio_FPR = false_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
 
+        TPR = true_positive_rate_difference(y_test, scores, sensitive_features=A_test)
+        ratio_TPR = true_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
+
         EO = equalized_odds_difference(y_test, scores, sensitive_features=A_test)
         ratio_EO = equalized_odds_ratio(y_test, scores, sensitive_features=A_test)
+
 
         print("--- EVALUATION  ---")
         classifier_summary = pd.concat([acc, mean_pred], axis=1)
         display(classifier_summary)
 
-        print("DP = ", parity)
-        print("DP_ratio = ", ratio_parity)
-        print("TPR = ", TPR)
-        print("TPR_ratio = ", ratio_TPR)
+        print("DP = ", DP)
+        print("DP_ratio = ", ratio_DP)
         print("FPR = ", FPR)
         print("FPR_ratio = ", ratio_FPR)
-        print("EO = ", EO)
-        print("EO_ratio = ", ratio_EO)
+        # print("TPR = ", TPR)
+        # print("TPR_ratio = ", ratio_TPR)
+        # print("EO = ", EO)
+        # print("EO_ratio = ", ratio_EO)
 
-        return acc, mean_pred, parity, FPR, TPR, EO, util
+        results_dict= {'ACC': acc, 'MEAN_PRED':mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO':EO, 'UTIL':util}
+        return results_dict
 
-    def save_stats(self, acc, mean_pred, parity, FPR, TPR, EO, util, scores):
+    def save_stats(self, results_dict, scores):
+        acc = results_dict['ACC']
+        mean_pred = results_dict['MEAN_PRED']
+        parity = results_dict['DP']
+        FPR = results_dict['FPR']
+        TPR = results_dict['TPR']
+        EO = results_dict['EO']
+        util = results_dict['UTIL']
+
         self.acc_list_overall.append(float(acc.loc['overall']))
         self.acc_list_0.append(float(acc.loc[0]))
         self.acc_list_1.append(float(acc.loc[1]))
@@ -136,17 +151,19 @@ class Evaluation(object):
         self.TPR_list.append(TPR)
         self.EO_list.append(EO)
         self.util_list.append(util)
+        self.scores_dict.update({self.i_scores: scores.tolist()})
+        self.i_scores +=1
 
         if self.scores_array is None:
             self.scores_array = np.array([scores]).T
         else:
             self.scores_array = np.concatenate((self.scores_array, np.array([scores]).T), axis=1)
 
-def my_plot(base_save_path, utility, accuracy, DP, EO):
+def my_plot(base_save_path, utility, accuracy, DP, FPR):
 
     #x_scale = plotting_dictionary["plot_info"]["x_scale"]
     x_label = "time steps"
-    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "equality of opportunity":EO}
+    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "false positive rate" : FPR}
 
     num_columns = 2
     num_rows = 2
@@ -158,13 +175,22 @@ def my_plot(base_save_path, utility, accuracy, DP, EO):
     current_row = 0
     current_column = 0
 
-    for key, values in measure_dict.items():
-        print('key, values', key, values)
+    for key, value in measure_dict.items():
+        # y = y = y_dict["mean"]
+        # y_FQ = y_dict["FQ"]
+        # y_TQ = y_dict["TQ"]
+
         axis = figure.add_subplot(grid[current_row, current_column])
-        axis.plot(values)
+        axis.plot(value)
         axis.set_xlabel(x_label)
         axis.title.set_text(key)
         axis.set_xscale("linear")
+        #
+        # axis.fill_between(y_FQ,
+        #                   y_TQ,
+        #                   alpha=0.3,
+        #                   edgecolor='#060080',
+        #                   facecolor='#928CFF')
 
         # c = 0 < 1
         if current_column == 0 and current_row ==0:

@@ -218,9 +218,9 @@ class MiniMonster(object):
         a_test = self.statistics.a_test.to_frame().to_numpy()
         y_test = self.statistics.y_test.to_frame().to_numpy()
 
-        # print('decisions', decisions)
-        # print('y_test', y_test)
-        # print('a_test', a_test)
+        print('decisions', decisions)
+        print('y_test', y_test)
+        print('a_test', a_test)
 
         updates = len(self.statistics.acc_list_overall)
 

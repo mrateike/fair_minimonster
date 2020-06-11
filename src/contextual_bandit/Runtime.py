@@ -16,8 +16,6 @@ import numpy as np
 
 def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
 
-
-
     statistics1 = Evaluation(TT)
     statistics2 = Evaluation(TT)
     # # shifts = True (DP), shifts = False (TPR, EOdds)

@@ -1,0 +1,106 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={utility},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.0365, ymax=0.0676666666666667,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+0 0.0566666666666667
+1 0.0379166666666667
+2 0.06625
+3 0.0441666666666667
+4 0.0620833333333333
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={accuracy},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.754666666666667, ymax=0.817,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+0 0.795
+1 0.7575
+2 0.814166666666667
+3 0.77
+4 0.805833333333333
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={demographic parity},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.00945087644720062, ymax=0.145725704950281,
+ytick style={color=black},
+ytick={0,0.05,0.1,0.15},
+yticklabels={0.00,0.05,0.10,0.15}
+]
+\addplot [semithick, color0]
+table {%
+0 0.0437431755478316
+1 0.0167621048069149
+2 0.131137839347186
+3 0.139531394563777
+4 0.0156451868337042
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={equality of opportunity},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.055, xmax=0.055,
+xtick style={color=black},
+xtick={-0.06,-0.04,-0.02,0,0.02,0.04,0.06},
+xticklabels={−0.06,−0.04,−0.02,0.00,0.02,0.04,0.06},
+y grid style={white!69.0196078431373!black},
+ymin=-0.055, ymax=0.055,
+ytick style={color=black},
+ytick={-0.075,-0.05,-0.025,0,0.025,0.05,0.075},
+yticklabels={−0.075,−0.050,−0.025,0.000,0.025,0.050,0.075}
+]
+\end{groupplot}
+
+\end{tikzpicture}

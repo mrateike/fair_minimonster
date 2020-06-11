@@ -121,12 +121,4 @@ def utility(y_true, y_pred, sample_weight=None):
     utility = y_pred.multiply(y_true) - y_pred.multiply(c)
     return utility.mean()
 
-def accuracy2_score(y_true, y_pred, sample_weight=None):
-    sum = 0
-    for index, yt in y_true.items():
-        if yt == y_pred[index]:
-            sum +=1
-    return sum/len(y_true)
-
-
 

@@ -30,7 +30,6 @@ from ._extra_metrics import (  # noqa: F401
     _mean_underprediction,
     test_statistics,
     utility,
-    accuracy2_score
     )
 
 from ._metrics_engine import (  # noqa: F401

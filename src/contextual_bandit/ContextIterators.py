@@ -38,7 +38,7 @@ class FICODistributionContextIterator(ContextIterator):
 class COMPASDistributionContextIterator(ContextIterator):
     def __init__(self):
         super(COMPASDistributionContextIterator, self).__init__()
-        self.distribution = FICODistribution(self.test_percentage)
+        self.distribution = COMPASDistribution(self.fraction_protected)
 
 class AdultCreditDistributionContextIterator(ContextIterator):
     def __init__(self):

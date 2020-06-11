@@ -2,7 +2,8 @@ import numpy as np
 from scipy.stats.distributions import truncnorm
 from numpy.random import RandomState
 
-def get_random(seed=None):
+# fixed here seed to 30
+def get_random(seed=30):
     if seed is None:
         return RandomState()
     else:
