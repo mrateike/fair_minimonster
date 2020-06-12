@@ -104,10 +104,11 @@ def _build_submit_file(args, base_path):
             file.write("# ----------------------------------------------------------------------- #\n\n")
 
             print('eps', args.eps)
-
-            for N in args.total_data:
-                for a in args.alpha:
-                    for s in args.seeds:
+            for s in args.seeds:
+                base_save_path_seed = "{}/seed_{}".format(base_save_path, s)
+                Path(base_save_path_seed).mkdir(parents=True, exist_ok=True)
+                for N in args.total_data:
+                    for a in args.alpha:
                         for mu in args.mu:
                             for nu in args.nu:
                                 for eps in args.eps:
@@ -129,7 +130,7 @@ def _build_submit_file(args, base_path):
                                                                   eps,
                                                                   nu,
                                                                   mu,
-                                                                  base_path,
+                                                                  base_save_path_seed,
                                                                   "-pid $(Process)" if args.queue_num else "")
 
                                 # if args.fairness_type is not None:
