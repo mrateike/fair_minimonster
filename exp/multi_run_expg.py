@@ -188,16 +188,17 @@ def _multi_run(args, base_path):
                                                "-mu", str(mu),
                                                "-p", str(base_save_path)
                                                ]
-
+                                    print('before subprocess.run - command', command)
+                                    subprocess.run(command)
                             # if args.fairness_type is not None:
                             #     for extension in _fairness_extensions(args, lambdas, build=False):
                             #         temp_command = deepcopy(command)
                             #         temp_command.extend(extension)
                             #         subprocess.run(temp_command)
                             # else:
-                            print('before subprocess.run - command', command)
 
-                            subprocess.run(command)
+
+
 
 
 
