@@ -172,8 +172,8 @@ def _multi_run(args, base_path):
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
         for s in args.seeds:
-            base_save_path = "{}/seed_{}".format(base_save_path, s)
-            Path(base_save_path).mkdir(parents=True, exist_ok=True)
+            seed_path = "{}/seed_{}".format(base_save_path, s)
+            Path(seed_path).mkdir(parents=True, exist_ok=True)
 
             for N in args.total_data:
                 for a in args.alpha:
@@ -189,7 +189,7 @@ def _multi_run(args, base_path):
                                                "-eps", str(eps),
                                                "-nu", str(nu),
                                                "-mu", str(mu),
-                                               "-p", str(base_save_path)
+                                               "-p", str(seed_path)
                                                ]
                                     print('before subprocess.run - command', command)
                                     subprocess.run(command)
