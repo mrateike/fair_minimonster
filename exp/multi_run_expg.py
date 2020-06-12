@@ -123,8 +123,8 @@ def _multi_run(args, base_path):
     # this is called when executed
     timestamp = time.gmtime()
     ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
-    ex_folder = 'Oracle_Uncalibrated_DP'
-    base_save_path = "{}/{}_{}".format(base_path, ts_folder, ex_folder)
+    ex_folder = str(args.fairness_type)
+    base_save_path = "{}/{}_Oracle_Uncalibrated_{}".format(base_path, ts_folder, ex_folder)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
     err_path = "{}/error".format(base_save_path)

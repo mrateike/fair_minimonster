@@ -66,7 +66,7 @@ if __name__ == "__main__":
 
     T = 2
     i = 0
-    seed_test = get_list_of_seeds(1)
+    seed_test = [30]
     statistics = Evaluation(args.time_steps_testing, seed_test)
     y_test = statistics.y_test
     a_test = statistics.a_test
@@ -82,8 +82,7 @@ if __name__ == "__main__":
 
 
     #phase 1 and phase 2 are different peopl
-    seeds_training = get_list_of_seeds(2)
-
+    seeds_training = [100,200]
     while i < T:
         print('I am computing policy ', i)
         results_dict, decisions =  play(args.time_steps_1, args.time_steps_2, fairness, args.eps, args.nu, statistics, seeds_training, args.mu)
