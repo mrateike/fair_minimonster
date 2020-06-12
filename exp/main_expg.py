@@ -25,67 +25,71 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    # Policy training parameters
-    parser.add_argument('-T1', '--time_steps_1', type=int, required=True,
-                        help='list of phase 1 time steps to be used')
-    parser.add_argument('-T2', '--time_steps_2', type=int, required=True,
-                        help='list of phase 2 time steps to be used')
-    parser.add_argument('-TT', '--time_steps_testing', type=int, required=False,
-                        help='testing time steps to be used', default=1000)
-    # parser.add_argument('-bs', '--batch_sizes', type=int, nargs='+', required=True,
-    #                     help='list of batch sizes to be used')
-
-    # Fairness parameters
-    parser.add_argument('-f', '--fairness_type', type=str, required=True,
-                        help="select the type of fairness (DP, FPR)"
-                             "if none is selected no fairness criterion is applied")
-    parser.add_argument('-eps', '--eps',
-                        type=float, nargs='+', required=True,
-                        help="list of statistical unfairness paramenters to be used")
+    parser.add_argument('-N', '--total_data', type=int, nargs='+', required=True,
+                        help='list of toatl data s to be used')
+    parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
+                        help='phase 1 phase 2 data split parameter')
+    parser.add_argument('-s', '--seeds', type=int, nargs='+', required=False,
+                        help='seeds for phase 1, 2, testing', default=967)
+    parser.add_argument('-i', '--iterations', type=int, required=False,
+                        help='how many policies should be computed per setting', default=100)
+    parser.add_argument('-f', '--fairness_type', type=str, nargs='+', required=True,
+                        help="select the type of fairness (DP, EO)")
+    parser.add_argument('-eps', '--eps', type=float, nargs='+', required=True,
+                        help="list of statistical unfairness paramenters (beta) to be used")
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
                         help="list of accuracy parameters of the oracle to be used")
-
-    parser.add_argument('-mu', '--mu', type=float, required=True,
+    parser.add_argument('-mu', '--mu', type=float, nargs='+', required=True,
                         help="minimum probability for simulating the bandit")
-
-    # Configuration parameters
-    # parser.add_argument('-d', '--data', type=str, required=False,
-    #                     help="select the distribution (FICO, COMPAS, ADULT, GERMAN, Uncalibrated)")
     parser.add_argument('-p', '--path', type=str, required=True, help="save path for the results")
-
-    # parser.add_argument('--plot', required=False, action='store_true')
 
     args = parser.parse_args()
 
-
     base_save_path = args.path
     eps = "eps_{}".format((args.eps[0]))
-    base_save_path = "{}/{}".format(base_save_path, eps)
+    mu = "mu_{}".format((args.mu[0]))
+    nu = "nu_{}".format((args.nu[0]))
+    alpha = "alpha_{}".format((args.alpha[0]))
+    seed = "seed_{}".format((args.seeds[0]))
+    base_save_path = "{}/{}_{}_{}_{}_{}".format(base_save_path, eps, mu, nu, alpha, seed)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
+    N = args.total_data[0]
+    # training data
+    T = round(0.8 * N)
+    # testing data
+    TT = N - T
+    #phase 1 phase 2 data
+    T1 = round(T ** (2 * args.alpha[0]))
+    T2 = T-T1
 
-    T = 2
-    i = 0
-    seed_test = [30]
-    statistics = Evaluation(args.time_steps_testing, seed_test)
+    # print('N', N)
+    # print('T1', T1)
+    # print('T2', T2)
+    # print('TT', TT)
+
+
+    seed_test = args.seeds[0]*45
+    statistics = Evaluation(TT, seed_test)
+
     y_test = statistics.y_test
     a_test = statistics.a_test
     test_data = {'y_test': y_test.squeeze().tolist(), 'a_test': a_test.squeeze().tolist()}
     parameter_save_path = "{}/test_data.json".format(base_save_path)
     save_dictionary(test_data, parameter_save_path)
 
-    if args.fairness_type == 'DP':
+
+    if args.fairness_type[0] == 'DP':
         fairness = DemographicParity()
-    elif args.fairness_type == 'EO':
+    elif args.fairness_type[0] == 'EO':
         fairness = TruePositiveRateDifference()
 
-
-
+    i = 0
     #phase 1 and phase 2 are different peopl
-    seeds_training = [100,200]
-    while i < T:
+    seeds_training = [37*args.seeds[0],17*args.seeds[0]]
+    while i < args.iterations:
         print('I am computing policy ', i)
-        results_dict, decisions =  play(args.time_steps_1, args.time_steps_2, fairness, args.eps, args.nu, statistics, seeds_training, args.mu)
+        results_dict, decisions =  play(T1, T2, fairness, args.eps[0], args.nu[0], statistics, seeds_training, args.mu[0])
 
         parameter_save_path = "{}/evaluation.json".format(base_save_path)
         save_dictionary(results_dict, parameter_save_path)

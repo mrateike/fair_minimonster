@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     N = args.data_set
     # training data
-    T = round(0.8 * T)
+    T = round(0.75 * T)
     # testing data
     TT = N-T
 

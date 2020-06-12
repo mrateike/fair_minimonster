@@ -51,7 +51,7 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         self._constraints = constraints
         self._eps = eps
         self._T = T
-        self._nu = nu[0]
+        self._nu = nu
         self._eta0 = eta0
         self._dataset1 = dataset1
         self.B = 2

@@ -60,7 +60,7 @@ class Evaluation(object):
 
         fraction_protected = 0.5
         distribution = UncalibratedScore(fraction_protected)
-        x_test, a_test, y_test = distribution.sample_test_dataset(TT, seed[0])
+        x_test, a_test, y_test = distribution.sample_test_dataset(TT, seed)
         x_test = pd.DataFrame(x_test.squeeze())
         self.y_test = pd.Series(y_test.squeeze(), name='label')
         a_test = pd.Series(a_test.squeeze(), name='sensitive_features_X')

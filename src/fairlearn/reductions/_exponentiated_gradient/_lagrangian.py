@@ -90,7 +90,7 @@ class _Lagrangian:
             h_idx += 1
 
         self.pickled_estimator = pickle.dumps(estimator)
-        self.eps = eps[0]
+        self.eps = eps
         self.B = B
         self.opt_lambda = opt_lambda
         self.hs = pd.Series(dtype="float64")
