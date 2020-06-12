@@ -70,7 +70,7 @@ for file in $(find "$2" -name "evaluation_mean.json"); do
 	echo -n ";" >> "$1"
 
 	# FPR_mean
-	cat "$file" | cut -d "," -f10 | cut -d ' ' -f 2| tr -d "\n" >> "$1"
+	cat "$file" | cut -d "," -f10 | cut -d ' ' -f 3| tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	# FPR_FQ
@@ -83,4 +83,3 @@ for file in $(find "$2" -name "evaluation_mean.json"); do
 
 	echo "" >> "$1"
 done
-
