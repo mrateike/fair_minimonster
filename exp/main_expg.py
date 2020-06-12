@@ -50,8 +50,8 @@ if __name__ == "__main__":
     mu = "mu_{}".format((args.mu[0]))
     nu = "nu_{}".format((args.nu[0]))
     alpha = "alpha_{}".format((args.alpha[0]))
-    seed = "seed_{}".format((args.seeds[0]))
-    base_save_path = "{}/{}_{}_{}_{}_{}".format(base_save_path, eps, mu, nu, alpha, seed)
+
+    base_save_path = "{}/{}-{}-{}-{}".format(base_save_path, eps, mu, nu, alpha)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
     N = args.total_data[0]

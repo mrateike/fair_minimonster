@@ -154,8 +154,7 @@ def _multi_run(args, base_path):
 
     for fair in args.fairness_type:
 
-        fair_folder = fair
-        base_save_path = "{}/{}".format(base_path, fair_folder)
+        base_save_path = "{}/{}".format(base_path, fair)
         Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
         timestamp = time.gmtime()
@@ -171,9 +170,12 @@ def _multi_run(args, base_path):
         output_path = "{}/output".format(base_save_path)
         Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        for N in args.total_data:
-            for a in args.alpha:
-                for s in args.seeds:
+        for s in args.seeds:
+            base_save_path = "{}/seed_{}".format(base_save_path, s)
+            Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+            for N in args.total_data:
+                for a in args.alpha:
                     for mu in args.mu:
                             for nu in args.nu:
                                 for eps in args.eps:

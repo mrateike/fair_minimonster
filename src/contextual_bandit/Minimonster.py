@@ -218,16 +218,14 @@ class MiniMonster(object):
 
 
         print('---- Floyds stats ----')
-
-
         # ------ statistics from Floyd -------
         decisions = self.statistics.scores_array
         a_test = self.statistics.a_test.to_frame().to_numpy()
         y_test = self.statistics.y_test.to_frame().to_numpy()
-
-        print('decisions', decisions)
-        print('y_test', y_test)
-        print('a_test', a_test)
+        #
+        # print('decisions', decisions)
+        # print('y_test', y_test)
+        # print('a_test', a_test)
 
         updates = len(self.statistics.acc_list_overall)
 
@@ -250,15 +248,15 @@ class MiniMonster(object):
         util = self.statistics.util_list
         DP = self.statistics.DP_list
         TPR = self.statistics.TPR_list
-        EO = self.statistics.EO_list
+        FPR = self.statistics.FPR_list
+        EO = [sum(x) for x in zip(TPR, FPR)]
+        # EO = self.statistics.EO_list
         acc_dict = {0: self.statistics.acc_list_0, 1: self.statistics.acc_list_1,
                     'overall': self.statistics.acc_list_overall}
         pred_dict = {0: self.statistics.mean_pred_0_list, 1: self.statistics.mean_pred_1_list,
                      'overall': self.statistics.mean_pred_overall_list}
         # print('utility', util)
         data = {'ACC': acc_dict, 'mean_pred': pred_dict, 'Utility': util, 'DP': DP, 'TPR': TPR, 'EO': EO}
-
-
 
 
         # ------ plotting & saving ------
