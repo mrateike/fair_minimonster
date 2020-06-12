@@ -117,6 +117,21 @@ def _build_submit_file(args, base_path):
 
 
 def _multi_run(args, base_path):
+
+    timestamp = time.gmtime()
+    ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+    ex_folder = 'Oracle_Uncalibrated_DP'
+    base_save_path = "{}/{}_{}".format(base_path, ts_folder, ex_folder)
+    Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+    err_path = "{}/error".format(base_save_path)
+    Path(err_path).mkdir(parents=True, exist_ok=True)
+    log_path = "{}/log".format(base_save_path)
+    Path(log_path).mkdir(parents=True, exist_ok=True)
+    output_path = "{}/output".format(base_save_path)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
+
+
     # this is called when executed
     for time_steps_1 in args.time_steps_1:
             for time_steps_2 in args.time_steps_2:
@@ -131,7 +146,8 @@ def _multi_run(args, base_path):
                                    "-bs", str(args.batch_size),
                                    "-eps", str(eps),
                                    "-nu", str(nu),
-                                   "-d", str(args.data)
+                                   "-d", str(args.data),
+                                   "-p", str(base_save_path)
                                    ]
                         if args.plot:
                             command.append("--plot")
@@ -200,13 +216,20 @@ if __name__ == "__main__":
 
    # optional: define parser errors
 
-    base_path = "{}/{}".format(args.path, args.data)
+    timestamp = time.gmtime()
+    ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+    ex_folder = 'Oracle_Uncalibrated_DP'
+    base_save_path = "{}/{}_{}".format(args.path, ts_folder, ex_folder)
+    Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
-    print('args.build_submit', args.build_submit)
+    err_path = "{}/error".format(base_save_path)
+    Path(err_path).mkdir(parents=True, exist_ok=True)
+    log_path = "{}/log".format(base_save_path)
+    Path(log_path).mkdir(parents=True, exist_ok=True)
+    output_path = "{}/output".format(base_save_path)
+    Path(output_path).mkdir(parents=True, exist_ok=True)
 
     if args.build_submit:
-        print('args', args)
-        print('base_path', base_path)
-        _build_submit_file(args, base_path)
+        _build_submit_file(args, base_save_path)
     else:
-        _multi_run(args, base_path)
+        _multi_run(args, args.path)

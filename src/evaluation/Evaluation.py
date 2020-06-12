@@ -123,10 +123,10 @@ class Evaluation(object):
         print("DP_ratio = ", ratio_DP)
         print("FPR = ", FPR)
         print("FPR_ratio = ", ratio_FPR)
-        # print("TPR = ", TPR)
-        # print("TPR_ratio = ", ratio_TPR)
-        # print("EO = ", EO)
-        # print("EO_ratio = ", ratio_EO)
+        print("TPR = ", TPR)
+        print("TPR_ratio = ", ratio_TPR)
+        print("EO = ", EO)
+        print("EO_ratio = ", ratio_EO)
 
         results_dict= {'ACC': acc, 'MEAN_PRED':mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO':EO, 'UTIL':util}
         return results_dict

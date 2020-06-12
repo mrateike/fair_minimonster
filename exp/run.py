@@ -13,12 +13,12 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Policy training parameters
-    parser.add_argument('-T1', '--time_steps_1', type=int, required=True,
-                        help='list of phase 1 time steps to be used')
-    parser.add_argument('-T2', '--time_steps_2', type=int, required=True,
-                        help='list of phase 2 time steps to be used')
-    parser.add_argument('-TT', '--time_steps_testing', type=int, required=False,
-                        help='testing time steps to be used', default=10000)
+    parser.add_argument('-N', '--data_set', type=int, required=True,
+                        help='total data (time stepts) used')
+    parser.add_argument('-a', '--alpha', type=int, required=True,
+                        help='phase1 phase2 splitting parameter')
+    # parser.add_argument('-TT', '--time_steps_testing', type=int, required=False,
+    #                     help='testing time steps to be used', default=10000)
     # parser.add_argument('-bs', '--batch_sizes', type=int, nargs='+', required=True,
     #                     help='list of batch sizes to be used')
 
@@ -39,11 +39,13 @@ if __name__ == "__main__":
     # Configuration parameters
     parser.add_argument('-d', '--data', type=str, required=True,
                         help="select the distribution (FICO, COMPAS, ADULT, GERMAN, Uncalibrated)")
-    parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
+    parser.add_argument('-p', '--path', type=str, required=True, help="save path for the results")
 
     parser.add_argument('--plot', required=False, action='store_true')
 
     args = parser.parse_args()
+
+
 
     # parser = argparse.ArgumentParser(description='Bechavods Fair Minimonster')
     # parser.add_argument('T1', type=int, help='phase 1 time steps')
@@ -53,9 +55,24 @@ if __name__ == "__main__":
     # parser.add_argument('batch', type=str, help='batch: exp, lin batchsize, none')
     # args = parser.parse_args()
 
-    T1 = args.time_steps_1
-    T2 = args.time_steps_2
-    TT = args.time_steps_testing
+
+    N = args.data_set
+    # training data
+    T = round(0.8 * T)
+    # testing data
+    TT = N-T
+
+    T1 = round(T**(args.alpha))
+    T2 = T - T1
+
+    print('N', N)
+    print('T1', T2)
+    print('T2', T2)
+    print('TT', TT)
+
+    # T1 = args.time_steps_1
+    # T2 = args.time_steps_2
+    # TT = args.time_steps_testing
     fairness = args.fairness_type
     batch = args.batch_type
     batchsize = args.batch_size
@@ -64,7 +81,7 @@ if __name__ == "__main__":
     dataset = args.data
 
     print('Im running')
-    play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset)
+    play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, args.path)
     print('/////// FINISHED ///////////')
 
 

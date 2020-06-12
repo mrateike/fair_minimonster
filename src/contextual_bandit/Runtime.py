@@ -15,7 +15,14 @@ from data.util import get_list_of_seeds
 
 # class Runtime(object):
 
-def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset):
+def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, base_save_path):
+
+
+    # eps = "eps_{}".format((args.eps[0]))
+    # base_save_path = "{}/{}".format(base_save_path, eps)
+    # Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+
     seed = get_list_of_seeds(1)
     statistics1 = Evaluation(TT, seed)
     statistics2 = Evaluation(TT, seed)

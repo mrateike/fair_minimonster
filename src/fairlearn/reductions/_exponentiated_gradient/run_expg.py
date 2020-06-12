@@ -28,7 +28,7 @@ import random
 # y_train, y_test = dataset.get_y(format=pd.Series)
 # A_train, A_test = dataset.get_sensitive_features(name='race', format=pd.Series)
 
-def play (n1_train, n2_train, fairness, eps, nu, statistics, seed):
+def play (n1_train, n2_train, fairness, eps, nu, statistics, seed, mu):
 
     fraction_protected = 0.5
     distribution = UncalibratedScore(fraction_protected)
@@ -73,7 +73,8 @@ def play (n1_train, n2_train, fairness, eps, nu, statistics, seed):
         # index += 1
 
         # -----  bandit min Loss version 2 -------
-        p = 0.1
+        p = mu
+
         right = int(random.uniform(0,1)>p)
         if right == 0:
             if y_true == 0:
