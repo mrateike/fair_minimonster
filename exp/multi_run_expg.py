@@ -91,8 +91,8 @@ def _build_submit_file(args, base_path):
                                       "-f {} " \
                                       "-eps {} " \
                                       "-nu {} " \
-                                      "-mu {}" \
-                                      "-p {}" \
+                                      "-mu {} " \
+                                      "-p {} " \
                                       "{} " \
                                       "{} ".format(time_steps_1,
                                                   time_steps_2,
