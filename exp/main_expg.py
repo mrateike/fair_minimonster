@@ -112,7 +112,6 @@ if __name__ == "__main__":
     DP_mean = mean(DP)
     FPR_mean = mean(FPR)
 
-    print('acc', acc)
     acc_FQ = np.percentile(acc, q=25)
     acc_TQ = np.percentile(acc, q=75)
     util_FQ = np.percentile(util, q=25)
@@ -122,6 +121,21 @@ if __name__ == "__main__":
     FPR_FQ = np.percentile(FPR, q=25)
     FPR_TQ = np.percentile(FPR, q=75)
 
+    acc_STD = np.std(acc)
+    util_STD = np.std(util)
+    DP_STD = np.std(DP)
+    FPR_STD = np.std(FPR)
+
+    acc_Q025 = np.quantile(acc, 0.025)
+    acc_Q975 = np.quantile(acc, 0.975)
+    util_Q025 = np.quantile(util, 0.025)
+    util_Q975 = np.quantile(util, 0.975)
+    DP_Q025 = np.quantile(DP, 0.025)
+    DP_Q975 = np.quantile(DP, 0.975)
+    FPR_Q025 = np.quantile(FPR, 0.025)
+    FPR_Q975 = np.quantile(FPR, 0.975)
+
+
     # data_mean = {'UTIL': {'mean':util_mean, 'FQ':util_FQ , 'TQ':util_TQ }, \
     #              'ACC':{'mean':acc_mean, 'FQ':acc_FQ , 'TQ':acc_TQ }, \
     #              'DP':{'mean':DP_mean, 'FQ':DP_FQ  , 'TQ':DP_TQ }, \
@@ -130,7 +144,12 @@ if __name__ == "__main__":
     data_mean = {'UTIL_mean': util_mean, 'UTIL_FQ': util_FQ, 'UTIL_TQ': util_TQ, \
                               'ACC_mean': acc_mean, 'ACC_FQ' : acc_FQ , 'ACC_TQ':acc_TQ, \
                               'DP_mean':DP_mean, 'DP_FQ':DP_FQ  , 'DP_TQ':DP_TQ , \
-                              'FPR_mean' : FPR_mean, 'FPR_FQ': FPR_FQ, 'FPR_TQ': FPR_TQ}
+                              'FPR_mean' : FPR_mean, 'FPR_FQ': FPR_FQ, 'FPR_TQ': FPR_TQ, \
+                              'UTIL_STD': util_STD, 'ACC_STD': acc_STD, 'DP_STD': DP_STD, 'FPR_STD': FPR_STD, \
+                              'UTIL_Q025' : util_Q025, 'UTIL_Q975' :util_Q975, \
+                              'ACC_Q025': acc_Q025, 'ACC_Q975' : acc_Q975, \
+                              'DP_Q025' : DP_Q025, 'DP_Q975' : DP_Q975, \
+                               'FPR_Q025' : FPR_Q025, 'FPR_Q975' : FPR_Q975}
 
     # y_pred = []
     # y_pred.append((decisions[0].values).tolist())
