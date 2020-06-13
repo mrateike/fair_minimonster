@@ -14,7 +14,7 @@ if [ -e "$1" ]; then
 	fi
 fi
 
-echo "data;fair;seed;eps;util_mean;util_FQ;util_TQ;acc_mean;acc_FQ;acc_TQ;DP_mean;DP_FQ;DP_TQ;FPR_mean;FPR_FQ;FPR_TQ" > "$1"
+echo "data;fair;seed;eps;util_mean;util_FQ;util_TQ;acc_mean;acc_FQ;acc_TQ;DP_mean;DP_FQ;DP_TQ;FPR_mean;FPR_FQ;FPR_TQ;util_std;acc_std;DP_std;FPR_std;util_Q025;util_Q975;acc_Q025;acc_Q975;DP_Q025;DP_Q975;FPR_Q025;FPR_Q975" > "$1"
 
 for file in $(find "$2" -name "evaluation_mean.json"); do
 	# uncal
@@ -77,8 +77,56 @@ for file in $(find "$2" -name "evaluation_mean.json"); do
 	cat "$file" | cut -d "," -f11 | cut -d ' ' -f 3| tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
-	# DP
-	cat "$file" | cut -d "," -f12 | cut -d " " -f3 | cut -d "}" -f1| tr -d "\n" >> "$1"
+	# FPR_TQ
+	cat "$file" | cut -d "," -f12 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# Util STD
+	cat "$file" | cut -d "," -f13 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# Acc STD
+	cat "$file" | cut -d "," -f14 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# DP STD
+	cat "$file" | cut -d "," -f15 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# FPR STD
+	cat "$file" | cut -d "," -f16 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# UTIL_Q025
+	cat "$file" | cut -d "," -f17 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# UTIL_Q975
+	cat "$file" | cut -d "," -f18 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# Acc_Q025
+	cat "$file" | cut -d "," -f19 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# Acc_Q975
+	cat "$file" | cut -d "," -f20 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# DP_Q025
+	cat "$file" | cut -d "," -f21 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# DP_Q975
+	cat "$file" | cut -d "," -f22 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# FPR_Q025
+	cat "$file" | cut -d "," -f23 | cut -d " " -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# FPR_Q975
+	cat "$file" | cut -d "," -f24 | cut -d " " -f3 | cut -d "}" -f1| tr -d "\n" >> "$1"
 
 
 	echo "" >> "$1"
