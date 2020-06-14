@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib as mpl
 #TkAgg
-mpl.use('Agg')
+mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
 
 
