@@ -11,7 +11,8 @@ import numpy as np
 # pylint: disable=no-name-in-module
 from scipy.special import expit as sigmoid
 from scipy.stats.distributions import truncnorm
-
+import matplotlib.pyplot as plt
+plt.switch_backend('Agg')
 from data.util import train_test_split, get_random, whiten
 from responsibly.dataset import build_FICO_dataset, COMPASDataset, AdultDataset, GermanDataset
 

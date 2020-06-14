@@ -9,6 +9,7 @@ if root_path not in sys.path:
 
 import matplotlib
 
+# mpl.use('Qt5Agg')
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
