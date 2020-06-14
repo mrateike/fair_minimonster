@@ -126,7 +126,7 @@ def _build_submit_file(args, base_path):
                                                 file.write("queue {}\n".format(args.queue_num
                                                                                    if args.queue_num is not None else ""))
 
-    print("## Finished building {} ##".format(sub_file_name))
+                print("## Finished building {} ##".format(sub_file_name))
 
 
 def _multi_run(args, base_path):
