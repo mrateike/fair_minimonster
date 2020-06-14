@@ -226,8 +226,9 @@ class _Lagrangian:
         Returns the classifier that solves the best-response problem for
         the vector of Lagrange multipliers `lambda_vec`.
         """
-        classifier = self._call_oracle(lambda_vec)
+
         if classifier is not None:
+            classifier = self._call_oracle(lambda_vec)
             def h(X): return classifier.predict(X)
 
             # h_error = self.obj.gamma(h)[0]
