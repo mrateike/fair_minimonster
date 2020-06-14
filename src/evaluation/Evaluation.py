@@ -28,7 +28,7 @@ from src.evaluation.plotting import plot_median, plot_mean
 from src.evaluation.training_evaluation import UTILITY
 import matplotlib
 from data.util import get_list_of_seeds
-matplotlib.use('Qt5Agg')
+# matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 

@@ -1,7 +1,7 @@
 import time
 from pathlib import Path
 import matplotlib as mpl
-mpl.use('Qt5Agg')
+# mpl.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
