@@ -46,15 +46,15 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
     :type eta_mul: float
     """
 
-    def __init__(self, dataset1, estimator, constraints, eps=0.01, T=50, nu=None, eta0=2.0):  # noqa: D103
+    def __init__(self, dataset1, estimator, constraints, eps, nu, it=100, eta0=2.0):  # noqa: D103
         self._estimator = estimator
         self._constraints = constraints
         self._eps = eps
-        self._T = T
         self._nu = nu
         self._eta0 = eta0
         self._dataset1 = dataset1
         self.B = 2
+        self._iterations = it
 
         self._best_gap = None
         self._predictors = None
@@ -119,7 +119,8 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
 
         last_regret_checked = _REGRET_CHECK_START_T
         last_gap = np.PINF
-        for t in range(0, self._T):
+        # Todo: let 100 iterations be set
+        for t in range(0, self._iterations):
             #logger.debug("...iter=%03d", t)
 
             # set lambdas for every constraint
@@ -223,23 +224,23 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         """
 
         probs = self._pmf_predict(X)
+
+        # print('model.predict: probs', probs)
         positive_probs = probs[:, 1]
 
         # print('pmf_predict: positive_probs', positive_probs)
         threshold = np.random.rand(len(positive_probs))
         # print('pmf_predict: threshold', threshold)
         dec = (positive_probs >= threshold) * 1
-        # print('pmf_predict: dec', dec)
+        # print('model.predict: dec', probs)
         i=0
         dec_prob = np.array([[7,7]])
-
         for d in dec:
             prop_dec = probs[i,int(d)]
             dec_prob = np.append(dec_prob, np.array([[int(d), float(prop_dec)]]), axis=0)
         dec_prob =  dec_prob[1:, :]
 
-
-
+        # print('model.predict: return', dec_prob)
         return dec_prob
 
     def _pmf_predict(self, X):
@@ -253,8 +254,13 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         """
 
         pred = pd.DataFrame()
+        # print('model._pmf_predict: self._hs', self._hs)
+        # print('model._pmf_predict: X', X)
         for t in range(len(self._hs)):
             pred[t] = self._hs[t](X)
+        # print('model._pmf_predict: pred', pred)
         # print('pmf_pred, self._weights', pred, self._weights)
+        # print('model._pmf_predict: self._weights', self._weights)
         positive_probs = pred[self._weights.index].dot(self._weights).to_frame()
+        # print('model._pmf_predict: positive_probs', positive_probs)
         return np.concatenate((1-positive_probs, positive_probs), axis=1)

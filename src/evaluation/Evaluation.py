@@ -45,6 +45,7 @@ class Evaluation(object):
         self.DP_list = []
         self.TPR_list = []
         self.FPR_list = []
+        self.EOP_list = []
         self.EO_list = []
         self.acc_list_overall = []
         self.acc_list_0 = []
@@ -114,6 +115,8 @@ class Evaluation(object):
         EO = equalized_odds_difference(y_test, scores, sensitive_features=A_test)
         ratio_EO = equalized_odds_ratio(y_test, scores, sensitive_features=A_test)
 
+        EOP = FPR + TPR
+
 
         print("--- EVALUATION  ---")
         classifier_summary = pd.concat([acc, mean_pred], axis=1)
@@ -128,7 +131,7 @@ class Evaluation(object):
         print("EO = ", EO)
         print("EO_ratio = ", ratio_EO)
 
-        results_dict= {'ACC': acc, 'MEAN_PRED':mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO':EO, 'UTIL':util}
+        results_dict= {'ACC': acc, 'MEAN_PRED':mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO':EO, 'UTIL':util, 'EOP':EOP}
         return results_dict
 
     def save_stats(self, results_dict, scores):
@@ -139,6 +142,7 @@ class Evaluation(object):
         TPR = results_dict['TPR']
         EO = results_dict['EO']
         util = results_dict['UTIL']
+        EOP = results_dict['EOP']
 
         self.acc_list_overall.append(float(acc.loc['overall']))
         self.acc_list_0.append(float(acc.loc[0]))
@@ -149,6 +153,7 @@ class Evaluation(object):
         self.DP_list.append(parity)
         self.FPR_list.append(FPR)
         self.TPR_list.append(TPR)
+        self.EOP_list.append(EOP)
         self.EO_list.append(EO)
         self.util_list.append(util)
         self.scores_dict.update({self.i_scores: scores.tolist()})
@@ -157,13 +162,71 @@ class Evaluation(object):
         if self.scores_array is None:
             self.scores_array = np.array([scores]).T
         else:
-            self.scores_array = np.concatenate((self.scores_array, np.array([scores]).T), axis=1)
+            self.scores_array = np.concatenate((self.scores_array, np.array([scores]).T), axis=1)\
 
-def my_plot(base_save_path, utility, accuracy, DP, FPR):
+    def save_plot_process_results(self, results_dict, path):
+
+        acc = results_dict['acc_dict']['overall']
+        util = results_dict['util']
+        DP = results_dict['DP']
+        # Todo: change to EOP, if works
+        EOP = results_dict['EOP']
+
+
+        my_plot(path, util, acc, DP, EOP)
+
+        acc_mean = np.mean(acc)
+        util_mean = np.mean(util)
+        DP_mean = np.mean(DP)
+        EOP_mean = np.mean(EOP)
+
+
+
+        # Computations over T policy results
+
+
+        acc_FQ = np.percentile(acc, q=25)
+        acc_TQ = np.percentile(acc, q=75)
+        util_FQ = np.percentile(util, q=25)
+        util_TQ = np.percentile(util, q=75)
+        DP_FQ = np.percentile(DP, q=25)
+        DP_TQ = np.percentile(DP, q=75)
+        EOP_FQ = np.percentile(EOP, q=25)
+        EOP_TQ = np.percentile(EOP, q=75)
+
+        acc_STD = np.std(acc)
+        util_STD = np.std(util)
+        DP_STD = np.std(DP)
+        EOP_STD = np.std(EOP)
+
+        acc_Q025 = np.quantile(acc, 0.025)
+        acc_Q975 = np.quantile(acc, 0.975)
+        util_Q025 = np.quantile(util, 0.025)
+        util_Q975 = np.quantile(util, 0.975)
+        DP_Q025 = np.quantile(DP, 0.025)
+        DP_Q975 = np.quantile(DP, 0.975)
+        EOP_Q025 = np.quantile(EOP, 0.025)
+        EOP_Q975 = np.quantile(EOP, 0.975)
+
+        data_mean = {'UTIL_mean': util_mean, 'UTIL_FQ': util_FQ, 'UTIL_TQ': util_TQ, \
+                     'ACC_mean': acc_mean, 'ACC_FQ': acc_FQ, 'ACC_TQ': acc_TQ, \
+                     'DP_mean': DP_mean, 'DP_FQ': DP_FQ, 'DP_TQ': DP_TQ, \
+                     'EOP_mean': EOP_mean, 'EOP_FQ': EOP_FQ, 'EOP_TQ': EOP_TQ, \
+                     'UTIL_STD': util_STD, 'ACC_STD': acc_STD, 'DP_STD': DP_STD, 'EOP_STD': EOP_STD, \
+                     'UTIL_Q025': util_Q025, 'UTIL_Q975': util_Q975, \
+                     'ACC_Q025': acc_Q025, 'ACC_Q975': acc_Q975, \
+                     'DP_Q025': DP_Q025, 'DP_Q975': DP_Q975, \
+                     'EOP_Q025': EOP_Q025, 'EOP_Q975': EOP_Q975}
+
+        parameter_save_path = "{}/evaluation_mean.json".format(path)
+        save_dictionary(data_mean, parameter_save_path)
+
+
+def my_plot(base_save_path, utility, accuracy, DP, EOP):
 
     #x_scale = plotting_dictionary["plot_info"]["x_scale"]
     x_label = "time steps"
-    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "false positive rate" : FPR}
+    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "false positive rate" : EOP}
 
     num_columns = 2
     num_rows = 2
@@ -258,50 +321,3 @@ def save_and_plot_results(base_save_path, statistics, update_iterations):
 #                                    statistics.equality_of_opportunity()],
 #                 file_path="{}/results_median_time.png".format(base_save_path))
 # #
-# def save_dictionary(data, path):
-#     try:
-#         with open(path, 'w+') as file_path:
-#             json.dump(data, file_path)
-#     except Exception as e:
-#         print('Saving file {} failed with exception: \n {}'.format(path, str(e)))
-#
-#
-# def load_dictionary(path):
-#     try:
-#         with open(path, 'r') as file_path:
-#             return json.load(file_path)
-#     except Exception as e:
-#         print('Loading file {} failed with exception: \n {}'.format(path, str(e)))
-#         return None
-#
-#
-# def serialize_value(value):
-#     if isinstance(value, dict):
-#         return serialize_dictionary(value)
-#     elif isinstance(value, list):
-#         return serialize_list(value)
-#     elif isinstance(value, np.ndarray):
-#         return value.tolist()
-#     elif inspect.isfunction(value):
-#         return value.__name__
-#     elif not (isinstance(value, str) or isinstance(value, numbers.Number) or isinstance(value, list) or isinstance(value, bool)):
-#         return type(value).__name__
-#     else:
-#         return value
-
-    #
-    #
-    # def serialize_dictionary(dictionary):
-    #     serialized_dict = copy.deepcopy(dictionary)
-    #     for key, value in serialized_dict.items():
-    #         serialized_dict[key] = serialize_value(value)
-    #
-    #     return serialized_dict
-    #
-    #
-    # def serialize_list(unserialized_list):
-    #     serialized_list = []
-    #     for value in unserialized_list:
-    #         serialized_list.append(serialize_value(value))
-    #
-    #     return serialized_list

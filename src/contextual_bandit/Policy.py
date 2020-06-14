@@ -19,7 +19,8 @@ class RegressionPolicy(Policy):
         self.model = model
 
     def get_decision(self, x):
-        return self.model.predict(x)
+        decision = self.model.predict(x)
+        return decision
 
     def predict(self, x):
         return self.model.predict(x)

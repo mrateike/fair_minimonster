@@ -15,15 +15,7 @@ class ContextIterator(object):
         self.fraction_protected = 0.5
         self.test_percentage = 0.2
 
-    def next(self):
-        x, a, y = self.distribution.sample_train_dataset(1)
-        X = pd.Series(x.squeeze())
-        Y = pd.Series(y.squeeze(), name='label').astype(int)
-        A = pd.Series(a.squeeze(), name='sensitive_features_X').astype(int)
-        XA = pd.concat([X, A == 1], axis=1).astype(float)
-        # XA = pd.concat([X, A], axis=1).astype(float)
-        A = A.rename('sensitive_features')
-        return XA, Y, A
+
 
 class UncalibratedContextIterator(ContextIterator):
     def __init__(self):

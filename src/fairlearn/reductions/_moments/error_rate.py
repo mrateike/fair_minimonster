@@ -42,10 +42,6 @@ class ErrorRate(ClassificationMoment):
         """Return the gamma values for the given predictor. predictor is always a classifier h"""
         # evaluated on both datasets
         pred = predictor(self.X_all)
-        # print('pred', pred)
-
-        # error = pd.Series(data=(self.tags_all[_LABEL] - pred).abs().mean(),
-        #                   index=self.index)
 
         error = [0]
         index = 0
@@ -57,7 +53,7 @@ class ErrorRate(ClassificationMoment):
             index += 1
 
         error = statistics.mean(error[1:])
-        # self._gamma_descr = str(error)
+
         return error
 
     def project_lambda(self, lambda_vec):

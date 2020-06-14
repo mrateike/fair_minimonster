@@ -240,11 +240,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-    if args.build_submit is None:
-        parser.error('when using --build_submit, --python_path has to be specified')
-
-
-
     if args.build_submit:
         _build_submit_file(args, args.path)
     else:

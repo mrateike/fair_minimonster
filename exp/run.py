@@ -8,80 +8,70 @@ if root_path not in sys.path:
 # from contextual_bandit import Runtime
 from src.contextual_bandit.Runtime import play
 import argparse
+from pathlib import Path
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    # Policy training parameters
-    parser.add_argument('-N', '--data_set', type=int, required=True,
-                        help='total data (time stepts) used')
-    parser.add_argument('-a', '--alpha', type=int, required=True,
-                        help='phase1 phase2 splitting parameter')
-    # parser.add_argument('-TT', '--time_steps_testing', type=int, required=False,
-    #                     help='testing time steps to be used', default=10000)
-    # parser.add_argument('-bs', '--batch_sizes', type=int, nargs='+', required=True,
-    #                     help='list of batch sizes to be used')
+    parser.add_argument('-N', '--total_data', type=int, nargs='+', required=True,
+                        help='list of total data s to be used')
+    parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
+                        help='phase 1 phase 2 data split parameter')
+    parser.add_argument('-s', '--seeds', type=int, nargs='+', required=False,
+                        help='seeds for phase 1, 2, testing', default=967)
 
-    # Fairness parameters
-    parser.add_argument('-f', '--fairness_type', type=str, required=False,
-                        help="select the type of fairness (DP, FPR)"
-                             "if none is selected no fairness criterion is applied")
-    parser.add_argument('-bt', '--batch_type', type=str, required=True,
-                        help='batches type used (exp, lin, none)')
-    parser.add_argument('-bs', '--batch_size', type=str, required=True,
-                        help='batches size used for lin (required)')
-    parser.add_argument('-eps', '--eps',
-                        type=float, nargs='+', required=True,
-                        help="list of statistical unfairness paramenters to be used")
+    parser.add_argument('-f', '--fairness_type', type=str, nargs='+', required=True,
+                        help="select the type of fairness (DP, EO)")
+    parser.add_argument('-bt', '--batch_type', type=str, nargs='+', required=True,
+                        help='batches type used (exp, lin, warm)')
+    parser.add_argument('-bs', '--batch_size', type=str, nargs='+', required=False, default=200,
+                        help='batches size used for lin (required) otherwise ignored')
+
+    parser.add_argument('-eps', '--eps', type=float, nargs='+', required=True,
+                        help="list of statistical unfairness paramenters (beta) to be used")
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
                         help="list of accuracy parameters of the oracle to be used")
+    parser.add_argument('-mu', '--mu', type=float, nargs='+', required=True,
+                        help="minimum probability for simulating the bandit")
 
     # Configuration parameters
-    parser.add_argument('-d', '--data', type=str, required=True,
-                        help="select the distribution (FICO, COMPAS, ADULT, GERMAN, Uncalibrated)")
-    parser.add_argument('-p', '--path', type=str, required=True, help="save path for the results")
+    parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
+                        help="select the distribution (FICO, Uncalibrated)")
+    parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
 
-    parser.add_argument('--plot', required=False, action='store_true')
 
     args = parser.parse_args()
 
+    base_save_path = args.path
+    eps = "eps_{}".format((args.eps[0]))
+    mu = "mu_{}".format((args.mu[0]))
+    nu = "nu_{}".format((args.nu[0]))
+    N = "N_{}".format((args.total_data[0]))
 
+    base_save_path = "{}/{}_{}_{}_{}".format(base_save_path, eps, mu, nu, N)
+    Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
-    # parser = argparse.ArgumentParser(description='Bechavods Fair Minimonster')
-    # parser.add_argument('T1', type=int, help='phase 1 time steps')
-    # parser.add_argument('T2', type=int, help='phase 2 time steps')
-    # parser.add_argument('TT', type=int, help='test set size')
-    # parser.add_argument('fairness', type=str, help='fairness: DP')
-    # parser.add_argument('batch', type=str, help='batch: exp, lin batchsize, none')
-    # args = parser.parse_args()
-
-
-    N = args.data_set
+    N = args.total_data[0]
     # training data
-    T = round(0.75 * T)
+    T = round(0.8 * N)
     # testing data
-    TT = N-T
-
-    T1 = round(T**(args.alpha))
+    TT = N - T
+    # phase 1 phase 2 data
+    T1 = round(T ** (2 * args.alpha[0]))
     T2 = T - T1
 
-    print('N', N)
-    print('T1', T2)
-    print('T2', T2)
-    print('TT', TT)
 
-    # T1 = args.time_steps_1
-    # T2 = args.time_steps_2
-    # TT = args.time_steps_testing
-    fairness = args.fairness_type
-    batch = args.batch_type
-    batchsize = args.batch_size
-    eps = args.eps
-    nu = args.nu
-    dataset = args.data
+    fairness = args.fairness_type[0]
+    batch = args.batch_type[0]
+    batchsize = args.batch_size[0]
+    eps = args.eps[0]
+    nu = args.nu[0]
+    dataset = args.data[0]
+    seed = args.seeds[0]
+    mu = args.mu[0]
 
     print('Im running')
-    play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, args.path)
+    play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, base_save_path, seed, mu)
     print('/////// FINISHED ///////////')
 
 
