@@ -187,8 +187,8 @@ class _Lagrangian:
 
         # print('err_C:', self.obj.signed_weights())
         # print('gamma_C: ', self.constraints.signed_weights(lambda_vec))
+
         signed_weights = self.obj.signed_weights() + self.constraints.signed_weights(lambda_vec)
-        # print('signed_weights', redY)
         redY = 1 * (signed_weights > 0)
         redW = signed_weights.abs()
 
@@ -208,9 +208,8 @@ class _Lagrangian:
 
         if len(np.unique(redY)>1):
             classifier = pickle.loads(self.pickled_estimator)
-
             oracle_call_start_time = time()
-            # print('redY', redY)
+
             classifier.fit(self.X_all, redY, sample_weight=redW)
 
             self.oracle_execution_times.append(time() - oracle_call_start_time)
@@ -226,9 +225,8 @@ class _Lagrangian:
         Returns the classifier that solves the best-response problem for
         the vector of Lagrange multipliers `lambda_vec`.
         """
-
+        classifier = self._call_oracle(lambda_vec)
         if classifier is not None:
-            classifier = self._call_oracle(lambda_vec)
             def h(X): return classifier.predict(X)
 
             # h_error = self.obj.gamma(h)[0]
