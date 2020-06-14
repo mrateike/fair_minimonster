@@ -206,7 +206,8 @@ class _Lagrangian:
         #     self.n_oracle_calls_dummy_returned += 1
         # else:
 
-        if len(np.unique(redY)>1):
+
+        if len(np.unique(redY))>1:
             classifier = pickle.loads(self.pickled_estimator)
             oracle_call_start_time = time()
 
@@ -225,33 +226,33 @@ class _Lagrangian:
         Returns the classifier that solves the best-response problem for
         the vector of Lagrange multipliers `lambda_vec`.
         """
-        classifier = self._call_oracle(lambda_vec)
+
+
+        valuesH = self.errorsH + self.gammasH.transpose().dot(lambda_vec)
+        best_idxH = valuesH.idxmin()
+        best_valueH = valuesH[best_idxH]
+
+        h_value = best_valueH
+        h = self.hsH.at[best_idxH]
+        classifier = self.classifiersH.at[best_idxH]
+        h_error = self.errorsH.at[best_idxH]
+        h_gamma = self.gammasH.iloc[:, best_idxH]
+
+        classifier_csc = self._call_oracle(lambda_vec)
         if classifier is not None:
-            def h(X): return classifier.predict(X)
 
+            def h_csc(X): return classifier_csc.predict(X)
             # h_error = self.obj.gamma(h)[0]
-            h_error = self.obj.gamma(h)
-            h_gamma = self.constraints.gamma(h)
-            h_value = h_error + h_gamma.dot(lambda_vec)
+            h_error_csc = self.obj.gamma(h)
+            h_gamma_csc = self.constraints.gamma(h)
+            h_value_csc = h_error + h_gamma.dot(lambda_vec)
 
-
-            valuesH = self.errorsH + self.gammasH.transpose().dot(lambda_vec)
-            best_idxH = valuesH.idxmin()
-            best_valueH = valuesH[best_idxH]
-            if best_valueH < h_value:
-                h_value = best_valueH
-                h = self.hsH.at[best_idxH]
-                classifier = self.classifiersH.at[best_idxH]
-                h_error = self.errorsH.at[best_idxH]
-                h_gamma = self.gammasH.iloc[:, best_idxH]
-        else:
-            h_value = best_valueH
-            h = self.hsH.at[best_idxH]
-            classifier = self.classifiersH.at[best_idxH]
-            h_error = self.errorsH.at[best_idxH]
-            h_gamma = self.gammasH.iloc[:, best_idxH]
-
-
+            if h_value_csc < h_value:
+                h_value = h_value_csc
+                h = h_csc
+                classifier = classifier_csc
+                h_error =  h_error_csc
+                h_gamma = h_gamma_csc
 
         if not self.hs.empty:
             values = self.errors + self.gammas.transpose().dot(lambda_vec)

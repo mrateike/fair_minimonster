@@ -1,9 +1,10 @@
 from src.fairlearn.reductions._exponentiated_gradient.exponentiated_gradient import ExponentiatedGradient
 from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity, TruePositiveRateDifference
-
+from matplotlib import pyplot as plt
 from src.contextual_bandit import Simulators
 from src.contextual_bandit.Minimonster import MiniMonster
 import pandas as pd
+from data.util import save_dictionary
 
 _L0 = "l0"
 _L1 = "l1"
@@ -43,10 +44,24 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, m
     start = time.time()
 
     # input fairness
-    M.fit(T2, T1, batch, batchsize)
+    reg1, reg2 = M.fit(T2, T1, batch, batchsize)
+
     stop = time.time()
     training_time = np.array([stop - start])
-    # print('L_t', l1)
+
+    plt.plot(reg1)
+    fig_path = "{}/regret1_nonzero.png".format(path)
+    plt.savefig(fig_path)
+    plt.close()
+    plt.plot(reg2)
+    fig_path = "{}/regret2_original.png".format(path)
+    plt.savefig(fig_path)
+
+    reg = {'Reg1':reg1, 'Reg2' : reg2}
+
+    regret_path = "{}/regret.json".format(path)
+    save_dictionary(reg, regret_path)
+
 
     print('------------- END of ALGORITHM  ----- time', training_time)
 

@@ -32,8 +32,7 @@ class MiniMonster(object):
         self.statistics_loss = Evaluation(TT, test_seed)
         self.statistics_var = Evaluation(TT, test_seed)
         self.statistics_final = Evaluation(TT, test_seed)
-        self.loss = []
-        self.opt_loss = []
+
         self.mu = mu
 
         # XA, L, A (supervised)
@@ -59,14 +58,17 @@ class MiniMonster(object):
 
 
     def fit(self, T2, T1, batch, batchsize):
+        real_loss = []
+        best_loss = []
+        losses = []
+
+        for i in self.dataset1['l1'].values:
+            real_loss.append(i)
 
         XA = pd.DataFrame()
         A = pd.Series(name='sensitive_features')
         L = pd.DataFrame(columns=['l0', 'l1'])
         dataset2_collected = pd.DataFrame()
-
-        l1 = []
-        l2 = []
 
         # for _solve_Opt
         psi = 4*(math.e -2)*np.log(T2+T1)
@@ -94,14 +96,14 @@ class MiniMonster(object):
             while True:
                 training_points.append(int(2 ** (m-1)))
                 m += 1
-                if (2 ** (m-1)) > T2:
+                if (2 ** (m-1)) >= T2:
                     break
         elif batch == 'lin':
             while True:
                 batchsize = int(batchsize)
                 training_points.append(int(m * batchsize))
                 m += 1
-                if int(m * batchsize) > T2:
+                if int(m * batchsize) >= T2:
                     break
         elif batch == 'warm':
            training_points = [3,5]
@@ -109,7 +111,7 @@ class MiniMonster(object):
            while True:
                training_points.append(int(m ** 2))
                m += 1
-               if int(m ** 2) > T2:
+               if int(m ** 2) >= T2:
                    break
 
         elif batch == 'none':
@@ -118,11 +120,10 @@ class MiniMonster(object):
             while True:
                 training_points.append(int(m))
                 m += 1
-                if int(m) > T2:
+                if int(m) >= T2:
                     break
         else:
             print('ERROR in batches')
-
 
 
 
@@ -143,6 +144,7 @@ class MiniMonster(object):
             y = individual.loc['label']
             d, p = self.sample(xa, Q, best_pi, m)
             l = self.B.get_loss(d, y)
+            losses.append(l)
 
 
 
@@ -161,7 +163,9 @@ class MiniMonster(object):
 
             # ---------- update batch ( push new ones) --------
             if t in training_points:
+                print('in update')
 
+                real_loss.extend(losses)
                 # data collected in this batch
                 dataset_batch = pd.concat([XA, L, A], axis=1)
 
@@ -186,35 +190,35 @@ class MiniMonster(object):
                 XA = pd.DataFrame()
                 A = pd.Series(name='sensitive_features')
                 L = pd.DataFrame()
+                losses = []
                 # ---------- END  batch update --------
-
-            # ----- evaluate loss -----------
-            self.loss.append(l)
-            l1.append(np.sum(self.loss) / t)
-
-            # Todo: implement loss and regret computation
-            # in hindsight, best policy loss
-            # xa is DF
-            # if best_pi != None:
-            #     print('xs', xa)
-            #     pred = best_pi.get_decision(xa)
-            #     print('pred', pred)
-            #     print('full_lvec', full_lvec)
-            #     leader_loss = full_lvec.loc[pred]
-            #     print('leader_loss', leader_loss)
-            #     print('type(self.opt_loss) ', type(self.opt_loss))
-            #     self.opt_loss = self.opt_loss.append(leader_loss)
-            #     print('self.opt_loss ', self.opt_loss)
-            #     l2 = l2.append(self.opt_loss/ t)
-            # else:
-            #     # check again
-            #     l2 = l2
-
-            # ----- next loop
             t += 1
+            # ---------- END  loop --------
 
         # ----- End fit: print results------------
-        l2 = 0
+
+        subset = self.history[['features', 'sensitive_features_X']]
+        for i, xa in subset.iterrows():
+            xa = xa.to_frame().T
+            d = best_pi.get_decision(xa).squeeze()[0]
+            if d == 1:
+                l = self.history.loc[i,'l1']
+            elif d == 0:
+                l = self.history.loc[i, 'l0']
+            else:
+                print('ERROR Minimonster fit')
+            best_loss.append(l)
+
+        # print('best_loss', best_loss, len(best_loss))
+        # print('real_loss',real_loss, len(real_loss) )
+
+
+        reg1 = [max((real_loss[i] - best_loss[i]) ,0) for i in range(0,len(real_loss))]
+        reg1 = np.cumsum(reg1)
+        reg2 = [(real_loss[i] - best_loss[i]) for i in range(0, len(real_loss))]
+        reg2 = np.cumsum(reg2)
+
+
 
 
 
@@ -248,7 +252,7 @@ class MiniMonster(object):
 
 
         # ------ retun statement ------
-        # return l1, l2, Q, best_pi
+        return reg1, reg2
 
 
 
