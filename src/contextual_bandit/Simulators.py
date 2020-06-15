@@ -21,6 +21,17 @@ class DatasetBandit(object):
         else:
             print('SIMULATOR ERROR')
 
+    def sample_test_dataset(self, T, seed):
+        x, a, y = self.distribution.sample_train_dataset(T, seed)
+        X = pd.Series(x.squeeze(), name='features')
+        Y = pd.Series(y.squeeze(), name='label').astype(int)
+        A = pd.Series(a.squeeze(), name='sensitive_features_X').astype(int)
+        XA = pd.concat([X, A == 1], axis=1).astype(float)
+        # XA = pd.concat([X, A], axis=1).astype(float)
+        A = A.rename('sensitive_features')
+
+        return XA, A, Y
+
     def sample_dataset(self, T, seed):
         x, a, y = self.distribution.sample_train_dataset(T, seed)
         X = pd.Series(x.squeeze(), name='features')

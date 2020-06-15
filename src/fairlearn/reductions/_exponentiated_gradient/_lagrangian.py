@@ -227,25 +227,20 @@ class _Lagrangian:
         the vector of Lagrange multipliers `lambda_vec`.
         """
 
-
         valuesH = self.errorsH + self.gammasH.transpose().dot(lambda_vec)
         best_idxH = valuesH.idxmin()
-        best_valueH = valuesH[best_idxH]
-
-        h_value = best_valueH
+        h_value = valuesH[best_idxH]
         h = self.hsH.at[best_idxH]
         classifier = self.classifiersH.at[best_idxH]
         h_error = self.errorsH.at[best_idxH]
         h_gamma = self.gammasH.iloc[:, best_idxH]
 
         classifier_csc = self._call_oracle(lambda_vec)
-        if classifier is not None:
-
+        if classifier_csc is not None:
             def h_csc(X): return classifier_csc.predict(X)
-            # h_error = self.obj.gamma(h)[0]
-            h_error_csc = self.obj.gamma(h)
-            h_gamma_csc = self.constraints.gamma(h)
-            h_value_csc = h_error + h_gamma.dot(lambda_vec)
+            h_error_csc = self.obj.gamma(h_csc)
+            h_gamma_csc = self.constraints.gamma(h_csc)
+            h_value_csc = h_error_csc + h_gamma_csc.dot(lambda_vec)
 
             if h_value_csc < h_value:
                 h_value = h_value_csc

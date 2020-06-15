@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from src.contextual_bandit import Argmin
-from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot
+from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot, my_plot2
 from src.evaluation.training_evaluation import Statistics
 from data.util import save_dictionary
 from src.evaluation.training_evaluation import UTILITY
@@ -29,9 +29,22 @@ class MiniMonster(object):
         self.dataset1 = dataset1
         self.dataset2 = dataset2.drop(['l0', 'l1'], axis=1)
         self.history = dataset1
-        self.statistics_loss = Evaluation(TT, test_seed)
-        self.statistics_var = Evaluation(TT, test_seed)
-        self.statistics_final = Evaluation(TT, test_seed)
+
+        loss_path = "{}/loss_policies__results".format(path)
+        Path(loss_path).mkdir(parents=True, exist_ok=True)
+
+        var_path = "{}/var_policies_results".format(path)
+        Path(var_path).mkdir(parents=True, exist_ok=True)
+
+        dec_path = "{}/bandit_decions_results".format(path)
+        Path(dec_path).mkdir(parents=True, exist_ok=True)
+
+        self.regret_path = "{}/bandit_regret_results".format(path)
+        Path(self.regret_path).mkdir(parents=True, exist_ok=True)
+
+        self.statistics_loss = Evaluation(TT, test_seed, loss_path, B)
+        self.statistics_var = Evaluation(TT, test_seed, var_path, B)
+        self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B)
 
         self.mu = mu
 
@@ -52,18 +65,16 @@ class MiniMonster(object):
         self.auc_dict = {}
         self.mean_pred_dict = {}
 
-        self.path = path
-
 
 
 
     def fit(self, T2, T1, batch, batchsize):
         real_loss = []
-        best_loss = []
-        losses = []
+        best_loss_T = []
+        best_loss_t = []
 
-        for i in self.dataset1['l1'].values:
-            real_loss.append(i)
+
+
 
         XA = pd.DataFrame()
         A = pd.Series(name='sensitive_features')
@@ -78,16 +89,28 @@ class MiniMonster(object):
         Q = []
         # best_pi = None
 
-        loss_path = "{}/loss_results".format(self.path)
-        Path(loss_path).mkdir(parents=True, exist_ok=True)
-
-        self.var_path = "{}/var_results".format(self.path)
-        Path(self.var_path).mkdir(parents=True, exist_ok=True)
 
 
         print('--- EVALUATION --  first best policy on phase 1 data')
         # print('self.dataset1', self.dataset1)
-        best_pi, results_dict_loss  = Argmin.argmin(loss_path, self.statistics_loss, self.eps, self.nu, self.fairness, self.dataset1)
+        best_pi  = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1)
+        self.statistics_loss.evaluate(best_pi.model)
+
+        for i in self.dataset1['l1'].values:
+            real_loss.append(i)
+        for i in range(0, self.dataset1.shape[0]):
+            individual1 = self.dataset1.iloc[i]
+            xa1 = individual1.loc[['features', 'sensitive_features_X']].to_frame().T
+            d1 = best_pi.predict(xa1).squeeze()[0]
+            if d1 == 1:
+                l1 = individual1.loc['l1']
+            elif d1 == 0:
+                l1 = individual1.loc['l0']
+            best_loss_t.append(l1)
+
+        print('len(real_loss)', len(real_loss))
+        print('len(best_loss_t)', len(best_loss_t))
+
 
         # ------------- batch settings
         training_points = []
@@ -96,14 +119,14 @@ class MiniMonster(object):
             while True:
                 training_points.append(int(2 ** (m-1)))
                 m += 1
-                if (2 ** (m-1)) >= T2:
+                if (2 ** (m-1)) > T2:
                     break
         elif batch == 'lin':
             while True:
                 batchsize = int(batchsize)
                 training_points.append(int(m * batchsize))
                 m += 1
-                if int(m * batchsize) >= T2:
+                if int(m * batchsize) > T2:
                     break
         elif batch == 'warm':
            training_points = [3,5]
@@ -111,16 +134,16 @@ class MiniMonster(object):
            while True:
                training_points.append(int(m ** 2))
                m += 1
-               if int(m ** 2) >= T2:
+               if int(m ** 2) > T2:
                    break
 
         elif batch == 'none':
             # need to collect a few first such that we do not get a label problem
-            m+=20
+            m=1
             while True:
                 training_points.append(int(m))
                 m += 1
-                if int(m) >= T2:
+                if int(m) > T2:
                     break
         else:
             print('ERROR in batches')
@@ -129,10 +152,11 @@ class MiniMonster(object):
 
         #----------- run loop --------------
         m=0
-        t = 1
-        while t < T2 + 1:
-            m+=1
+        t = 0
 
+        while t < T2:
+            t+= 1
+            m+=1
             individual = self.dataset2.iloc[(t-1)]
 
             xa = individual.loc[['features', 'sensitive_features_X']].to_frame().T
@@ -141,10 +165,11 @@ class MiniMonster(object):
             XA = XA.append(xa)
             A = A.append(a)
 
+
+            d, p = self.sample(xa, Q, best_pi, m, self.statistics_decisions)
             y = individual.loc['label']
-            d, p = self.sample(xa, Q, best_pi, m)
             l = self.B.get_loss(d, y)
-            losses.append(l)
+            real_loss.append(l)
 
 
 
@@ -165,18 +190,26 @@ class MiniMonster(object):
             if t in training_points:
                 print('in update')
 
-                real_loss.extend(losses)
+                # real_loss.extend(losses)
                 # data collected in this batch
                 dataset_batch = pd.concat([XA, L, A], axis=1)
 
                 # data collected so far in phase 2
                 dataset2_collected = dataset2_collected.append(dataset_batch)
 
-
                 print('--- EVALUATION -- batch update ', m, 'at time', t, 'best policy')
                 # print('dataset2_collected',dataset2_collected)
-                best_pi, results_dict_loss = Argmin.argmin(loss_path, self.statistics_loss, self.eps, self.nu, self.fairness, self.dataset1, dataset2_collected)
+                best_pi = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1, dataset2_collected)
 
+                db = best_pi.predict(xa).squeeze()[0]
+                if db == 1:
+                    lb = ips_loss.filter(['l1']).values.squeeze()
+                elif db == 0:
+                    lb = ips_loss.filter(['l0']).values.squeeze()
+                best_loss_t.append(lb)
+
+
+                self.statistics_loss.evaluate(best_pi.model)
                 self.num_amo_calls += 1
 
 
@@ -192,11 +225,23 @@ class MiniMonster(object):
                 L = pd.DataFrame()
                 losses = []
                 # ---------- END  batch update --------
-            t += 1
+
             # ---------- END  loop --------
 
-        # ----- End fit: print results------------
+        # self.statistics_final.evaluate(best_pi)
 
+
+        # ----- Calculate regret at each step ------------
+
+        regt0 = [max((real_loss[i] - best_loss_t[i]), 0) for i in range(0, len(real_loss))]
+        regt0_cum = np.cumsum(regt0)
+        regt = [(real_loss[i] - best_loss_t[i]) for i in range(0, len(real_loss))]
+        regt_cum = np.cumsum(regt)
+
+        regret_path = "{}/t_".format(self.regret_path)
+        my_plot2(regret_path, regt, regt_cum, regt0, regt0_cum)
+
+        # ----- Calculate regret T in hindsight ------------
         subset = self.history[['features', 'sensitive_features_X']]
         for i, xa in subset.iterrows():
             xa = xa.to_frame().T
@@ -207,52 +252,33 @@ class MiniMonster(object):
                 l = self.history.loc[i, 'l0']
             else:
                 print('ERROR Minimonster fit')
-            best_loss.append(l)
+            best_loss_T.append(l)
 
-        # print('best_loss', best_loss, len(best_loss))
-        # print('real_loss',real_loss, len(real_loss) )
+        regT0 = [max((real_loss[i] - best_loss_T[i]) ,0) for i in range(0,len(real_loss))]
+        regT0_cum = np.cumsum(regT0)
+        RT0 = regT0_cum[-1]
+        regT = [(real_loss[i] - best_loss_T[i]) for i in range(0, len(real_loss))]
+        regT_cum = np.cumsum(regT)
+        RT = regT_cum[-1]
 
+        print('regT0_cum', RT0)
+        print('regT_cum', RT)
 
-        reg1 = [max((real_loss[i] - best_loss[i]) ,0) for i in range(0,len(real_loss))]
-        reg1 = np.cumsum(reg1)
-        reg2 = [(real_loss[i] - best_loss[i]) for i in range(0, len(real_loss))]
-        reg2 = np.cumsum(reg2)
+        regret_path = "{}/T_".format(self.regret_path)
+        my_plot2(regret_path, regT, regT_cum, regT0, regT0_cum)
 
+        reg_dict = {}
+        reg_dict['test'] = [1,2,3]
+        reg_dict['regT0_cum'] = RT0
+        reg_dict['regT_cum'] = RT
 
-
-
-
-
-        # ------ evaluation of the finally best policy returned -------
-        final_path = "{}/final_results".format(self.path)
-        Path(final_path).mkdir(parents=True, exist_ok=True)
-
-        self.statistics_final.evaluate(best_pi)
-        decisions = self.statistics_final.scores_array
-        a_test = self.statistics_final.a_test.to_frame().to_numpy()
-        y_test = self.statistics_final.y_test.to_frame().to_numpy()
-        updates = len(self.statistics_final.acc_list_overall)
-
-        print('---- Floyds stats ----')
-        # ------ statistics from Floyd -------
-        floyds_stats = Statistics(
-            predictions=decisions,
-            protected_attributes=a_test,
-            ground_truths=y_test,
-            additonal_measures= {UTILITY: {'measure_function': lambda s, y, decisions : np.mean(decisions * (y - 0.5)),
-            'detailed': False}})
-
-        save_and_plot_results(
-            base_save_path=final_path,
-            statistics=floyds_stats, update_iterations = updates)
-
-        print('---- My stats ----')
-        # my stats
-        self.statistics_final.save_plot_process_results(results_dict_loss, final_path)
+        regret_path = "{}/regret.json".format(self.regret_path)
+        save_dictionary(reg_dict, regret_path)
 
 
-        # ------ retun statement ------
-        return reg1, reg2
+
+
+
 
 
 
@@ -301,67 +327,106 @@ class MiniMonster(object):
     #
     #     return decisions
 
-    def sample(self, x, Q, best_pi, t):
+    def sample(self, x, Q, best_pi, m, statistics):
         # xa = pd.DataFrame
         # Q = [Policy,float]
         # best_pi = Policy
-        # print('x', x, type(x))
 
+        xa_test = statistics.XA_test
         p = np.zeros(2)
+        p_t = np.zeros((xa_test.shape[0], 2))
         if Q == []:
-            dec_prob = best_pi.predict(x)
-            dec = int(dec_prob[0,0])
-            prob = dec_prob[0,1]
+            dec_prob = best_pi.predict(x).squeeze()
+            dec = int(dec_prob[0])
+            prob = dec_prob[1]
             p[dec] = prob
-            # print('p', p)
+            p[1-dec] = 1-prob
+
+            dec_prob_t = best_pi.predict(xa_test)
+            dec_t = dec_prob_t[:, 0].astype(int)
+            prob_t = dec_prob_t[:, 1]
+
+            for i in range(0, len(dec_t)):
+                dt = dec_t[i]
+                pt = prob_t[i]
+                p_t[i][dt] = pt
+                p_t[i][1-dt] = 1-pt
+
+
+
 
         else:
-            # print('Q', Q)
             for item in Q:
-                # print('item', item)
                 pi = item[0]
                 w = item[1]
-                # print('w in Q', w)
+
                 dec_prob = pi.get_decision(x).squeeze()
-                # print('dec_prob', dec_prob)
                 dec = int(dec_prob[0])
-                # print('dec', dec)
                 prob = dec_prob[1]
                 p[dec] += w*prob
                 p[1-dec]+=w*(1-prob)
-                # print('p', p)
+
+                dec_prob_t = best_pi.predict(xa_test)
+                dec_t = dec_prob_t[:, 0].astype(int)
+                prob_t = dec_prob_t[:, 1]
+
+                for i in range(0, len(dec_t)):
+                    dt = dec_t[i]
+                    pt = prob_t[i]
+                    p_t[i][dt] = w*pt
+                    p_t[i][1 - dt] = w*(1 - pt)
+
+                # print('p_t', p_t)
 
             ## Mix in leader
-
-            # print('best_pi', best_pi)
             bp_dec_prob = best_pi.get_decision(x).squeeze()
-            # print('best_pi_get_dec', bp_dec_prob)
             bp_dec = int(bp_dec_prob[0])
             bp_prob = bp_dec_prob[1]
-            # print('bp_prob', bp_prob)
-            # print('bp_dec', bp_dec)
+
+            bp_dec_prob_t = best_pi.get_decision(xa_test)
+            # print('bp_dec_prob_t', bp_dec_prob_t)
+            bp_dec_t = bp_dec_prob_t[:,0]
+            bp_prob_t = bp_dec_prob_t[:,1]
+
 
             # print('Q', Q)
             bp_w = 1 - np.sum([q[1] for q in Q])
-            # print('bp_w ', bp_w)
-            # print('bp_prob', bp_prob)
-            # print('p', p)
-            p[bp_dec] += (bp_w*bp_prob)
-            p[1-bp_dec] +=bp_w*(1-bp_prob)
-            # print('add to one p', p)
 
-        # in paper:
-        # print('p before mixing in', p)
-        # print('mu(t)', self._get_mu(t))
-        p = (1 - 2 * self._get_mu(t)) * p + self._get_mu(t)
-        # print('p after mixing in', p)
-        ## Take decision
+            p[bp_dec] += (bp_w*bp_prob)
+            p[1-bp_dec] += (bp_w*(1-bp_prob))
+
+            for i in range(0, len(bp_dec_t)):
+                bp_dt = int(bp_dec_t[i])
+                bp_pt = bp_prob_t[i]
+                p_t[i][bp_dt] += (bp_w * bp_pt)
+                p_t[i][(1 - bp_dt)] += (bp_w * (1 - bp_pt))
+
+
+
+        # print('before mu p_t', p_t)
+        mu = self._get_mu(m)
+        p = (1 - 2 *  mu) * p + mu
+        p_t = (1 - 2 * mu) * p_t + mu
+        # print('after mu p_t', p_t)
 
         # assert p[1] >= 0 and p[1] <= 1 and p[1]+p[0] <=1, 'probability needs to be [0,1]'
 
-
-        dec = (p[1] >= np.random.rand(1)) * 1
+        random_threshold = np.random.rand(1)
+        dec = (p[1] >= random_threshold) * 1
         dec = dec.squeeze()
+
+        for i in range(0, len(p_t)):
+            random_threshold = np.random.rand(1)
+            dec_t[i] = (p_t[i][1] >= random_threshold) * 1
+            dec_t[i] = dec_t[i].squeeze()
+
+        # print('dec_t', dec_t)
+        # 1 / 0
+
+        print('--- EVALUATION -- learners decision making')
+        scores_test = pd.Series(dec_t)
+        # print('scores_test', scores_test)
+        statistics.evaluate_scores(scores_test)
 
         return dec, p[dec]
 
@@ -410,7 +475,7 @@ class MiniMonster(object):
 
         # normally loop here small iterations (because otherwise get a problem of <2 labels
         updated = True
-        while updated and iterations < 5:
+        while updated and iterations < 20:
             iterations += 1
             updated = False
 
@@ -482,14 +547,15 @@ class MiniMonster(object):
 
             ## AMO call
             # print('----- AMO 2 ----------')
-            print('--- EVALUATION -- policy high variance, update loop:', iterations)
+
 
             Dpimin_dataset1 = Dpimin_dataset.iloc[0:T1,:]
             Dpimin_dataset2 = Dpimin_dataset.iloc[T1:,:].drop(columns=['label'])
             # print('Dpimin_dataset1', Dpimin_dataset1)
             # print('Dpimin_dataset2', Dpimin_dataset2)
 
-            pi, results_dict_var = Argmin.argmin(self.var_path, self.statistics_var, self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
+            pi = Argmin.argmin(self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
+
             self.num_amo_calls += 1
             # print('----- END AMO 2 ----------')
 
@@ -508,22 +574,17 @@ class MiniMonster(object):
 
             if Dpi > 0:
                 updated = True
-                # print('---- Second Constraint: broken -----')
-                # print('Vpi_dataset', Vpi_dataset)
-                # print('Vpi_dataset.columns', Vpi_dataset.columns)
-                # print('Vpi_dataset.index', Vpi_dataset.index)
-                Vpi, ptwo = self.get_cum_loss(Vpi_dataset, pi, predictions)
 
-                # print('Spi_dataset', Spi_dataset)
-                # print('Spi_dataset.columns', Spi_dataset.columns)
-                # print('Spi_dataset.index', Spi_dataset.index)
+                Vpi, ptwo = self.get_cum_loss(Vpi_dataset, pi, predictions)
                 Spi, ptwo = self.get_cum_loss(Spi_dataset, pi, predictions)
 
                 toadd = (Vpi + Dpi) / (2 * (1 - mu) * Spi)
                 Q.append((pi, toadd))
-            # else:
-            #     print('----- END SOLVE OP naturally ----------')
-            #     return Q, best_pi
+                print('--- EVALUATION -- policy high variance, update loop:', iterations)
+                self.statistics_var.evaluate(pi.model)
+            else:
+                print('----- END SOLVE OP naturally ----------')
+                return Q
 
         print('----- END SOLVE OP ----------')
         return Q
@@ -541,10 +602,7 @@ class MiniMonster(object):
             # Todo FIX THIS: danger with other datasets selecting only first two columns
             predictions[pi] = dict(zip([i for i in dataset.index], pi.get_all_decisions(dataset.loc[:, ['features', 'sensitive_features_X']])))
 
-
-        # print('predictions', predictions)
         score = 0.0
-        # dataset.index.names = [phase, i]
         for x in dataset.index:
             l = dataset.filter(items=['l0', 'l1']).loc[x,:]
             l = l.rename({'l0': 0, 'l1': 1})

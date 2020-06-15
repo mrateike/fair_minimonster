@@ -31,13 +31,15 @@ from data.util import get_list_of_seeds
 # matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+from src.evaluation.training_evaluation import Statistics
+
 
 import tikzplotlib as tpl
 
 
 
 class Evaluation(object):
-    def __init__(self, TT, seed):
+    def __init__(self, TT, seed, path, B):
         # self.acc_dict ={'overall':{}, 0:{}, 1:{}}
         # self.mean_pred_dict = {'overall':{}, 0:{}, 1:{}}
         # set seed
@@ -58,43 +60,43 @@ class Evaluation(object):
         self.scores_dict = {}
         self.scores_array = None
         self.i_scores = 0
+        self.path = path
 
-        fraction_protected = 0.5
-        distribution = UncalibratedScore(fraction_protected)
-        x_test, a_test, y_test = distribution.sample_test_dataset(TT, seed)
-        x_test = pd.DataFrame(x_test.squeeze())
-        self.y_test = pd.Series(y_test.squeeze(), name='label')
-        a_test = pd.Series(a_test.squeeze(), name='sensitive_features_X')
-        self.XA_test = pd.concat([x_test, a_test == 1], axis=1).astype(float)
-        self.a_test = a_test.rename('sensitive_features')
+
+        self.XA_test, self.a_test, self.y_test = B.sample_test_dataset(TT, seed)
+        # x_test = pd.DataFrame(x_test.squeeze())
+        # self.y_test = pd.Series(y_test.squeeze(), name='label')
+        # a_test = pd.Series(a_test.squeeze(), name='sensitive_features_X')
+        # self.XA_test = pd.concat([x_test, a_test == 1], axis=1).astype(float)
+        # self.a_test = a_test.rename('sensitive_features')
 
 
 
     def evaluate(self, pi):
-        print('--- validation oracle policy returned --- ')
+        dec_prob = pi.predict(self.XA_test).squeeze()
 
-        # get prediction
-        dec_prob = pi.predict(self.XA_test)
         scores = pd.Series(dec_prob[:,0], name="scores_expgrad_XA").astype(int)
+        results_dict = self.get_stats(self.y_test, scores, self.a_test)
+        self.save_stats(results_dict, scores)
 
-        # cannot merge these two
-        # Todo: decisions
-
+    def evaluate_scores(self, scores):
         results_dict = self.get_stats(self.y_test, scores, self.a_test)
         self.save_stats(results_dict, scores)
 
 
     def get_stats(self, y_test, scores, A_test):
 
-        # -------- my statistics -----------
+        # -------- definition -----------
         def summary_as_df(name, summary):
             a = pd.Series(summary.by_group)
             a['overall'] = summary.overall
             return pd.DataFrame({name: a})
 
+        # -------- my statistics -----------
         acc = summary_as_df(
             "accuracy_XA",
             accuracy_score_group_summary(y_test, scores, sensitive_features=A_test))
+
 
         mean_pred = summary_as_df(
             "acceptance_rate_XA",
@@ -106,17 +108,16 @@ class Evaluation(object):
         DP = demographic_parity_difference(y_test, scores, sensitive_features=A_test)
         ratio_DP = demographic_parity_ratio(y_test, scores, sensitive_features=A_test)
 
-        FPR = false_positive_rate_difference(y_test, scores, sensitive_features=A_test)
-        ratio_FPR = false_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
-
         TPR = true_positive_rate_difference(y_test, scores, sensitive_features=A_test)
         ratio_TPR = true_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
 
+
+
+        FPR = false_positive_rate_difference(y_test, scores, sensitive_features=A_test)
+        # ratio_FPR = false_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
+
         EO = equalized_odds_difference(y_test, scores, sensitive_features=A_test)
-        ratio_EO = equalized_odds_ratio(y_test, scores, sensitive_features=A_test)
-
-        EOP = FPR + TPR
-
+        # ratio_EO = equalized_odds_ratio(y_test, scores, sensitive_features=A_test)
 
         print("--- EVALUATION  ---")
         classifier_summary = pd.concat([acc, mean_pred], axis=1)
@@ -124,17 +125,15 @@ class Evaluation(object):
 
         print("DP = ", DP)
         print("DP_ratio = ", ratio_DP)
-        print("FPR = ", FPR)
-        print("FPR_ratio = ", ratio_FPR)
-        print("TPR = ", TPR)
-        print("TPR_ratio = ", ratio_TPR)
-        print("EO = ", EO)
-        print("EO_ratio = ", ratio_EO)
+        print("EO = ", TPR)
+        print("EO_ratio = ", ratio_TPR)
 
-        results_dict= {'ACC': acc, 'MEAN_PRED':mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO':EO, 'UTIL':util, 'EOP':EOP}
+        results_dict = {'ACC': acc, 'MEAN_PRED': mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO': EO, 'UTIL': util}
+
         return results_dict
 
     def save_stats(self, results_dict, scores):
+
         acc = results_dict['ACC']
         mean_pred = results_dict['MEAN_PRED']
         parity = results_dict['DP']
@@ -142,18 +141,18 @@ class Evaluation(object):
         TPR = results_dict['TPR']
         EO = results_dict['EO']
         util = results_dict['UTIL']
-        EOP = results_dict['EOP']
 
+
+        # ------ update lists -----
         self.acc_list_overall.append(float(acc.loc['overall']))
         self.acc_list_0.append(float(acc.loc[0]))
         self.acc_list_1.append(float(acc.loc[1]))
-        self.mean_pred_overall_list.append(float(mean_pred.loc['overall']))
         self.mean_pred_0_list.append(float(mean_pred.loc[0]))
         self.mean_pred_1_list.append(float(mean_pred.loc[1]))
+        self.mean_pred_overall_list.append(float(mean_pred.loc['overall']))
         self.DP_list.append(parity)
         self.FPR_list.append(FPR)
         self.TPR_list.append(TPR)
-        self.EOP_list.append(EOP)
         self.EO_list.append(EO)
         self.util_list.append(util)
         self.scores_dict.update({self.i_scores: scores.tolist()})
@@ -164,25 +163,107 @@ class Evaluation(object):
         else:
             self.scores_array = np.concatenate((self.scores_array, np.array([scores]).T), axis=1)\
 
+        # ------ save lists ----
+        acc = self.acc_list_overall
+        accuracy0 = self.acc_list_0
+        accuracy1 = self.acc_list_1
+        mean_pred0 = self.mean_pred_0_list
+        mean_pred1 = self.mean_pred_1_list
+        mean_pred = self.mean_pred_overall_list
+        DP = self.DP_list
+        EOP = self.TPR_list
+        util = self.util_list
+
+
+        acc_dict = {0: accuracy1, 1: accuracy0, 'overall': acc}
+        pred_dict = {0: mean_pred0, 1: mean_pred1, 'overall': mean_pred}
+        results_dict = {'acc_dict': acc_dict, 'pred_dict': pred_dict, 'util': util, 'DP': DP, 'EOP': EOP}
+
+        evaluation_path = "{}/measures.json".format(self.path)
+        save_dictionary(results_dict, evaluation_path)
+
+        # ---- save decisions
+        scores = self.scores_dict
+        decisions_path = "{}/decisions.json".format(self.path)
+        save_dictionary(scores, decisions_path)
+
+        # ---- plot four measures over iterations -----
+        my_plot(self.path, util, acc, DP, EOP)
+
+        # ---- get averages and std  ------
+        acc_mean = np.mean(acc)
+        util_mean = np.mean(util)
+        DP_mean = np.mean(DP)
+        EOP_mean = np.mean(EOP)
+
+        acc_FQ = np.percentile(acc, q=25)
+        acc_TQ = np.percentile(acc, q=75)
+        util_FQ = np.percentile(util, q=25)
+        util_TQ = np.percentile(util, q=75)
+        DP_FQ = np.percentile(DP, q=25)
+        DP_TQ = np.percentile(DP, q=75)
+        EOP_FQ = np.percentile(EOP, q=25)
+        EOP_TQ = np.percentile(EOP, q=75)
+
+        acc_STD = np.std(acc)
+        util_STD = np.std(util)
+        DP_STD = np.std(DP)
+        EOP_STD = np.std(EOP)
+
+        acc_Q025 = np.quantile(acc, 0.025)
+        acc_Q975 = np.quantile(acc, 0.975)
+        util_Q025 = np.quantile(util, 0.025)
+        util_Q975 = np.quantile(util, 0.975)
+        DP_Q025 = np.quantile(DP, 0.025)
+        DP_Q975 = np.quantile(DP, 0.975)
+        EOP_Q025 = np.quantile(EOP, 0.025)
+        EOP_Q975 = np.quantile(EOP, 0.975)
+
+        data_mean = {'UTIL_mean': util_mean, 'UTIL_FQ': util_FQ, 'UTIL_TQ': util_TQ, \
+                     'ACC_mean': acc_mean, 'ACC_FQ': acc_FQ, 'ACC_TQ': acc_TQ, \
+                     'DP_mean': DP_mean, 'DP_FQ': DP_FQ, 'DP_TQ': DP_TQ, \
+                     'EOP_mean': EOP_mean, 'EOP_FQ': EOP_FQ, 'EOP_TQ': EOP_TQ, \
+                     'UTIL_STD': util_STD, 'ACC_STD': acc_STD, 'DP_STD': DP_STD, 'EOP_STD': EOP_STD, \
+                     'UTIL_Q025': util_Q025, 'UTIL_Q975': util_Q975, \
+                     'ACC_Q025': acc_Q025, 'ACC_Q975': acc_Q975, \
+                     'DP_Q025': DP_Q025, 'DP_Q975': DP_Q975, \
+                     'EOP_Q025': EOP_Q025, 'EOP_Q975': EOP_Q975}
+
+        parameter_save_path = "{}/evaluation_mean.json".format(self.path)
+        save_dictionary(data_mean, parameter_save_path)
+
+        # # print('---- Floyds stats ----')
+        # decisions = self.scores_array
+        # a_test = self.a_test.to_frame().to_numpy()
+        # y_test = self.y_test.to_frame().to_numpy()
+        # updates = len(self.acc_list_overall)
+
+        # # ------ statistics from Floyd -------
+        # floyds_stats = Statistics(
+        #     predictions=decisions,
+        #     protected_attributes=a_test,
+        #     ground_truths=y_test,
+        #     additonal_measures={UTILITY: {'measure_function': lambda s, y, decisions: np.mean(decisions * (y - 0.5)),
+        #                                   'detailed': False}})
+        # save_and_plot_results(
+        #     base_save_path=self.path,
+        #     statistics=floyds_stats, update_iterations=updates)
+
+
     def save_plot_process_results(self, results_dict, path):
 
         acc = results_dict['acc_dict']['overall']
         util = results_dict['util']
         DP = results_dict['DP']
-        # Todo: change to EOP, if works
         EOP = results_dict['EOP']
 
-
+        # print('results_dict', results_dict)
         my_plot(path, util, acc, DP, EOP)
 
         acc_mean = np.mean(acc)
         util_mean = np.mean(util)
         DP_mean = np.mean(DP)
         EOP_mean = np.mean(EOP)
-
-
-
-        # Computations over T policy results
 
 
         acc_FQ = np.percentile(acc, q=25)
@@ -224,9 +305,8 @@ class Evaluation(object):
 
 def my_plot(base_save_path, utility, accuracy, DP, EOP):
 
-    #x_scale = plotting_dictionary["plot_info"]["x_scale"]
     x_label = "time steps"
-    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "false positive rate" : EOP}
+    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "true positive rate" : EOP}
 
     num_columns = 2
     num_rows = 2
@@ -239,9 +319,6 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
     current_column = 0
 
     for key, value in measure_dict.items():
-        # y = y = y_dict["mean"]
-        # y_FQ = y_dict["FQ"]
-        # y_TQ = y_dict["TQ"]
 
         axis = figure.add_subplot(grid[current_row, current_column])
         axis.plot(value)
@@ -256,6 +333,7 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
         #                   facecolor='#928CFF')
 
         # c = 0 < 1
+
         if current_column == 0 and current_row ==0:
             current_column =1
         elif current_column == 1 and current_row ==0:
@@ -265,11 +343,8 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
             current_column = 1
             current_row = 1
 
-        # if current_column > 0:
-        #     current_row += 1
-        #     current_column = 0
 
-    file_path = "{}/my_results.png".format(base_save_path)
+    file_path = "{}/my_plot.png".format(base_save_path)
     plt.savefig(file_path)
     tpl.save(file_path.replace(".png", ".tex"),
              figure=figure,
@@ -281,6 +356,58 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
                  "scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
     plt.close('all')
 
+def my_plot2(base_save_path, A1, A2, B1, B2):
+
+    x_label = "time steps"
+    measure_dict = {'per round regret': A1, 'cum regret': A2, 'per round regret (non-zero)':B1, "cum regret (non-zero)" : B2}
+
+    num_columns = 2
+    num_rows = 2
+
+    figure = plt.figure(constrained_layout=True)
+    grid = GridSpec(nrows=num_rows, ncols=num_columns, figure=figure)
+
+
+    current_row = 0
+    current_column = 0
+
+    for key, value in measure_dict.items():
+
+        axis = figure.add_subplot(grid[current_row, current_column])
+        axis.plot(value)
+        axis.set_xlabel(x_label)
+        axis.title.set_text(key)
+        axis.set_xscale("linear")
+        #
+        # axis.fill_between(y_FQ,
+        #                   y_TQ,
+        #                   alpha=0.3,
+        #                   edgecolor='#060080',
+        #                   facecolor='#928CFF')
+
+        # c = 0 < 1
+
+        if current_column == 0 and current_row ==0:
+            current_column =1
+        elif current_column == 1 and current_row ==0:
+            current_row =1
+            current_column=0
+        else:
+            current_column = 1
+            current_row = 1
+
+
+    file_path = "{}regret.png".format(base_save_path)
+    plt.savefig(file_path)
+    tpl.save(file_path.replace(".png", ".tex"),
+             figure=figure,
+             axis_width='\\figwidth',
+             axis_height='\\figheight',
+             tex_relative_path_to_data='.',
+             extra_groupstyle_parameters={"horizontal sep=1.2cm"},
+             extra_axis_parameters={
+                 "scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
+    plt.close('all')
 
 def save_and_plot_results(base_save_path, statistics, update_iterations):
     """ Stores the training results (statistics and/or model parameters) in the specified path.
@@ -309,7 +436,7 @@ def save_and_plot_results(base_save_path, statistics, update_iterations):
                                     statistics.accuracy()],
               fairness_measures=[statistics.demographic_parity(),
                                  statistics.equality_of_opportunity()],
-              file_path="{}/results_mean_time.png".format(base_save_path))
+              file_path="{}/floyds_plot.png".format(base_save_path))
 
 #     plot_median(x_values=range(update_iterations),
 #                 x_label="Time steps",

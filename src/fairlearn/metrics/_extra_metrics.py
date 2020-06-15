@@ -108,16 +108,8 @@ def test_statistics(y_test, a_test):
 
 
 def utility(y_true, y_pred, sample_weight=None):
-    # pred_mean = y_pred.mean(axis=0)
-    # # print('pred_mean', pred_mean)
-    # proby1 = len(y_true[y_true.values == 1]) / len(y_true)
-    # # print('proby1', proby1)
-    c = 0.5
-    # print('y_true', y_true, type(y_true))
-    # print('y_pred', y_pred, type(y_pred))
 
-    #utility = y_pred(y_true - c)
-    print('utility: y_true', )
+    c = 0.5
     utility = y_pred.multiply(y_true) - y_pred.multiply(c)
     return utility.mean()
 

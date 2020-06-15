@@ -206,9 +206,9 @@ class Statistics:
                     filtered_predictions = predictions
                     filtered_ground_truths = ground_truths
 
-                print('filtered_ground_truths', filtered_ground_truths.shape)
-                print('filtered_predictions', filtered_predictions.shape)
-                print('filtered_protected_attributes', filtered_protected_attributes.shape)
+                # print('filtered_ground_truths', filtered_ground_truths.shape)
+                # print('filtered_predictions', filtered_predictions.shape)
+                # print('filtered_protected_attributes', filtered_protected_attributes.shape)
 
                 utility_matching_gt = np.repeat(filtered_ground_truths, filtered_predictions.shape[1], axis=1)
 

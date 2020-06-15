@@ -46,7 +46,7 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
     :type eta_mul: float
     """
 
-    def __init__(self, dataset1, estimator, constraints, eps, nu, it=100, eta0=2.0):  # noqa: D103
+    def __init__(self, dataset1, estimator, constraints, eps, nu, it=50, eta0=2.0):  # noqa: D103
         self._estimator = estimator
         self._constraints = constraints
         self._eps = eps
@@ -223,24 +223,19 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         :rtype: Scalar or vector
         """
 
-        probs = self._pmf_predict(X)
-
-        # print('model.predict: probs', probs)
+        probs = self._pmf_predict(X).astype(float)
         positive_probs = probs[:, 1]
-
-        # print('pmf_predict: positive_probs', positive_probs)
         threshold = np.random.rand(len(positive_probs))
-        # print('pmf_predict: threshold', threshold)
         dec = (positive_probs >= threshold) * 1
-        # print('model.predict: dec', probs)
-        i=0
         dec_prob = np.array([[7,7]])
+
+        i = 0
         for d in dec:
             prop_dec = probs[i,int(d)]
-            dec_prob = np.append(dec_prob, np.array([[int(d), float(prop_dec)]]), axis=0)
+            dec_prob = np.append(dec_prob, [[d, prop_dec]], axis=0)
+            i+=1
         dec_prob =  dec_prob[1:, :]
 
-        # print('model.predict: return', dec_prob)
         return dec_prob
 
     def _pmf_predict(self, X):

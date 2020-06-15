@@ -20,8 +20,7 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, m
 
 
     seed_test = 45*seed
-    seed_phase1 = 37*seed
-    seed_phase2 = 17*seed
+    seed_train = 17*seed
 
 
     if fairness == "EO":
@@ -31,12 +30,10 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, m
 
     B = Simulators.DatasetBandit(dataset)
 
+    dataset = B.sample_dataset(T1+T2, seed)
+    dataset1 = dataset.iloc[:T1]
+    dataset2 = dataset.iloc[T1:(T1+T2)]
 
-    dataset1 = B.sample_dataset(T1, seed_phase1)
-    dataset2 = B.sample_dataset(T2, seed_phase2)
-    dataset2 = dataset2.set_axis(range(T1, T1+T2), axis=0)
-    print('dataset1', dataset1)
-    print('dataset2', dataset2)
 
     M = MiniMonster(B, fairness, dataset1, eps, nu, TT, seed_test, dataset2, path, mu)
 
@@ -44,23 +41,12 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, m
     start = time.time()
 
     # input fairness
-    reg1, reg2 = M.fit(T2, T1, batch, batchsize)
+    M.fit(T2, T1, batch, batchsize)
 
     stop = time.time()
     training_time = np.array([stop - start])
 
-    plt.plot(reg1)
-    fig_path = "{}/regret1_nonzero.png".format(path)
-    plt.savefig(fig_path)
-    plt.close()
-    plt.plot(reg2)
-    fig_path = "{}/regret2_original.png".format(path)
-    plt.savefig(fig_path)
 
-    reg = {'Reg1':reg1, 'Reg2' : reg2}
-
-    regret_path = "{}/regret.json".format(path)
-    save_dictionary(reg, regret_path)
 
 
     print('------------- END of ALGORITHM  ----- time', training_time)
