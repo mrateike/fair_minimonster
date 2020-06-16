@@ -23,7 +23,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--fairness_type', type=str, nargs='+', required=True,
                         help="select the type of fairness (DP, EO)")
     parser.add_argument('-bt', '--batch_type', type=str, nargs='+', required=True,
-                        help='batches type used (exp, lin, warm)')
+                        help='batches type used (no_batch, exp, lin, warm_start)')
     parser.add_argument('-bs', '--batch_size', type=str, nargs='+', required=False, default=200,
                         help='batches size used for lin (required) otherwise ignored')
 
@@ -41,6 +41,8 @@ if __name__ == "__main__":
 
 
     args = parser.parse_args()
+
+
 
     base_save_path = args.path
     eps = "eps_{}".format((args.eps[0]))

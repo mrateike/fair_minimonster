@@ -30,14 +30,17 @@ class MiniMonster(object):
         self.dataset2 = dataset2.drop(['l0', 'l1'], axis=1)
         self.history = dataset1
 
-        loss_path = "{}/loss_policies__results".format(path)
+        loss_path = "{}/loss_policies_results".format(path)
         Path(loss_path).mkdir(parents=True, exist_ok=True)
+        loss_path = "{}/loss_".format(loss_path)
 
         var_path = "{}/var_policies_results".format(path)
         Path(var_path).mkdir(parents=True, exist_ok=True)
+        var_path = "{}/var_".format(var_path)
 
         dec_path = "{}/bandit_decions_results".format(path)
         Path(dec_path).mkdir(parents=True, exist_ok=True)
+        dec_path = "{}/dec_".format(dec_path)
 
         self.regret_path = "{}/bandit_regret_results".format(path)
         Path(self.regret_path).mkdir(parents=True, exist_ok=True)
@@ -45,6 +48,7 @@ class MiniMonster(object):
         self.statistics_loss = Evaluation(TT, test_seed, loss_path, B)
         self.statistics_var = Evaluation(TT, test_seed, var_path, B)
         self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B)
+
 
         self.mu = mu
 
@@ -106,6 +110,7 @@ class MiniMonster(object):
                 l1 = individual1.loc['l1']
             elif d1 == 0:
                 l1 = individual1.loc['l0']
+
             best_loss_t.append(l1)
 
         print('len(real_loss)', len(real_loss))
@@ -128,7 +133,7 @@ class MiniMonster(object):
                 m += 1
                 if int(m * batchsize) > T2:
                     break
-        elif batch == 'warm':
+        elif batch == 'warm_start':
            training_points = [3,5]
            m +=2
            while True:
@@ -137,7 +142,7 @@ class MiniMonster(object):
                if int(m ** 2) > T2:
                    break
 
-        elif batch == 'none':
+        elif batch == 'no_batch':
             # need to collect a few first such that we do not get a label problem
             m=1
             while True:
@@ -233,12 +238,16 @@ class MiniMonster(object):
 
         # ----- Calculate regret at each step ------------
 
-        regt0 = [max((real_loss[i] - best_loss_t[i]), 0) for i in range(0, len(real_loss))]
-        regt0_cum = np.cumsum(regt0)
-        regt = [(real_loss[i] - best_loss_t[i]) for i in range(0, len(real_loss))]
-        regt_cum = np.cumsum(regt)
+        print('len(real_loss)', len(real_loss))
+        print('len(best_loss_t)', len(best_loss_t))
 
-        regret_path = "{}/t_".format(self.regret_path)
+        regt0 = [max((real_loss[i] - best_loss_t[i]), 0) for i in range(0, len(real_loss))]
+        regt0_cum = np.cumsum(regt0).tolist()
+        regt = [(real_loss[i] - best_loss_t[i]) for i in range(0, len(real_loss))]
+        regt_cum = np.cumsum(regt).tolist()
+
+        regret_path = "{}/round_".format(self.regret_path)
+
         my_plot2(regret_path, regt, regt_cum, regt0, regt0_cum)
 
         # ----- Calculate regret T in hindsight ------------
@@ -255,22 +264,32 @@ class MiniMonster(object):
             best_loss_T.append(l)
 
         regT0 = [max((real_loss[i] - best_loss_T[i]) ,0) for i in range(0,len(real_loss))]
-        regT0_cum = np.cumsum(regT0)
+        regT0_cum = np.cumsum(regT0).tolist()
         RT0 = regT0_cum[-1]
         regT = [(real_loss[i] - best_loss_T[i]) for i in range(0, len(real_loss))]
-        regT_cum = np.cumsum(regT)
+        regT_cum = np.cumsum(regT).tolist()
         RT = regT_cum[-1]
 
-        print('regT0_cum', RT0)
-        print('regT_cum', RT)
+        regret_path2 = "{}/finalT_".format(self.regret_path)
 
-        regret_path = "{}/T_".format(self.regret_path)
-        my_plot2(regret_path, regT, regT_cum, regT0, regT0_cum)
+        my_plot2(regret_path2, regT, regT_cum, regT0, regT0_cum)
 
         reg_dict = {}
-        reg_dict['test'] = [1,2,3]
-        reg_dict['regT0_cum'] = RT0
-        reg_dict['regT_cum'] = RT
+
+        reg_dict['RT'] = RT
+        reg_dict['RT0'] = RT0
+
+        reg_dict['regt'] = regt
+        reg_dict['regt_cum'] = regt_cum
+
+        reg_dict['regt0'] = regt0
+        reg_dict['regt0_cum'] = regt0_cum
+
+        reg_dict['regT'] = regT
+        reg_dict['regT_cum'] = regT_cum
+
+        reg_dict['regT0'] = regT0
+        reg_dict['regT0_cum'] = regT0_cum
 
         regret_path = "{}/regret.json".format(self.regret_path)
         save_dictionary(reg_dict, regret_path)

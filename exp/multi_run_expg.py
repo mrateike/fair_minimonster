@@ -47,159 +47,161 @@ if root_path not in sys.path:
 
 def _build_submit_file(args, base_path):
 
-    data_folder = "Uncalibrated"
-    base_path = "{}/{}".format(base_path, data_folder)
-    Path(base_path).mkdir(parents=True, exist_ok=True)
+    oracle_path = "{}/Oracle".format(base_path)
+    Path(oracle_path).mkdir(parents=True, exist_ok=True)
 
-    for fair in args.fairness_type:
+    for d in args.data:
+        data_path = "{}/{}".format(oracle_path, d)
+        Path(data_path).mkdir(parents=True, exist_ok=True)
 
-        fair_folder = fair
-        base_save_path = "{}/{}".format(base_path, fair_folder)
-        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+        for f in args.fairness_type:
+            fair_path = "{}/{}".format(data_path, f)
+            Path(fair_path).mkdir(parents=True, exist_ok=True)
 
-        timestamp = time.gmtime()
-        ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
-        ex_folder = fair
-        base_save_path = "{}/{}_Oracle_Uncalibrated_{}".format(base_save_path, ts_folder, ex_folder)
-        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+            timestamp = time.gmtime()
+            ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+            experiment_path = "{}/{}_Oracle_Uncalibrated_{}".format(fair_path, ts_folder, f)
+            Path(experiment_path).mkdir(parents=True, exist_ok=True)
 
-        err_path = "{}/error".format(base_save_path)
-        Path(err_path).mkdir(parents=True, exist_ok=True)
-        log_path = "{}/log".format(base_save_path)
-        Path(log_path).mkdir(parents=True, exist_ok=True)
-        output_path = "{}/output".format(base_save_path)
-        Path(output_path).mkdir(parents=True, exist_ok=True)
+            err_path = "{}/error".format(experiment_path)
+            Path(err_path).mkdir(parents=True, exist_ok=True)
+            log_path = "{}/log".format(experiment_path)
+            Path(log_path).mkdir(parents=True, exist_ok=True)
+            output_path = "{}/output".format(experiment_path)
+            Path(output_path).mkdir(parents=True, exist_ok=True)
 
 
-        print('///// In build submit /////')
-        sub_file_name = "./{}.sub".format('Uncalibrated') if fair is None else "./{}_{}.sub".format('Uncalibrated',
-                                                                                                             fair)
-        print("## Started building {} ##".format(sub_file_name))
+            print('///// In build submit /////')
+            sub_file_name = "./Oracle_{}_{}.sub".format(d, f)
+            print("## Started building {} ##".format(sub_file_name))
 
-        with open(sub_file_name, "w") as file:
-            file.write("# ----------------------------------------------------------------------- #\n")
-            file.write("# RUNTIME LIMITATION                                                      #\n")
-            file.write("# ----------------------------------------------------------------------- #\n\n")
-            file.write("# Maximum expected execution time for the job, in seconds\n")
-            file.write("# 43200 = 12h\n")
-            file.write("# 86400 = 24h\n")
-            file.write("MaxTime = 43200\n\n")
-            file.write("# Kill the jobs without warning\n")
-            file.write("periodic_remove = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))\n\n")
-            file.write("# ----------------------------------------------------------------------- #\n")
-            file.write("# RESSOURCE SELECTION                                                     #\n")
-            file.write("# ----------------------------------------------------------------------- #\n\n")
-            file.write("request_memory = {}\n".format(args.ram))
-            file.write("request_cpus = {}\n\n".format(args.cpu))
-            file.write("# ----------------------------------------------------------------------- #\n")
-            file.write("# FOLDER SELECTION                                                        #\n")
-            file.write("# ----------------------------------------------------------------------- #\n\n")
-            file.write("environment = \"PYTHONUNBUFFERED=TRUE\"\n")
-            file.write("executable = /home/mrateike/miniconda3/envs/fairlearn_original/bin/python\n\n")
-            file.write("error = {}/error/experiment.$(Process).err\n".format(base_save_path))
-            file.write("output = {}/output/experiment.$(Process).out\n".format(base_save_path))
-            file.write("log = {}/log/experiment.$(Process).log\n".format(base_save_path))
-            file.write("# ----------------------------------------------------------------------- #\n")
-            file.write("# QUEUE                                                                   #\n")
-            file.write("# ----------------------------------------------------------------------- #\n\n")
+            with open(sub_file_name, "w") as file:
+                file.write("# ----------------------------------------------------------------------- #\n")
+                file.write("# RUNTIME LIMITATION                                                      #\n")
+                file.write("# ----------------------------------------------------------------------- #\n\n")
+                file.write("# Maximum expected execution time for the job, in seconds\n")
+                file.write("# 43200 = 12h\n")
+                file.write("# 86400 = 24h\n")
+                file.write("MaxTime = 43200\n\n")
+                file.write("# Kill the jobs without warning\n")
+                file.write("periodic_remove = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))\n\n")
+                file.write("# ----------------------------------------------------------------------- #\n")
+                file.write("# RESSOURCE SELECTION                                                     #\n")
+                file.write("# ----------------------------------------------------------------------- #\n\n")
+                file.write("request_memory = {}\n".format(args.ram))
+                file.write("request_cpus = {}\n\n".format(args.cpu))
+                file.write("# ----------------------------------------------------------------------- #\n")
+                file.write("# FOLDER SELECTION                                                        #\n")
+                file.write("# ----------------------------------------------------------------------- #\n\n")
+                file.write("environment = \"PYTHONUNBUFFERED=TRUE\"\n")
+                file.write("executable = /home/mrateike/miniconda3/envs/fairlearn_original/bin/python\n\n")
+                file.write("error = {}/error/experiment.$(Process).err\n".format(experiment_path))
+                file.write("output = {}/output/experiment.$(Process).out\n".format(experiment_path))
+                file.write("log = {}/log/experiment.$(Process).log\n".format(experiment_path))
+                file.write("# ----------------------------------------------------------------------- #\n")
+                file.write("# QUEUE                                                                   #\n")
+                file.write("# ----------------------------------------------------------------------- #\n\n")
 
-            print('eps', args.eps)
-            for s in args.seeds:
-                base_save_path_seed = "{}/seed_{}".format(base_save_path, s)
-                Path(base_save_path_seed).mkdir(parents=True, exist_ok=True)
-                for N in args.total_data:
-                    for a in args.alpha:
-                        for mu in args.mu:
-                            for nu in args.nu:
-                                for eps in args.eps:
-                                        command = "exp/main_expg.py " \
-                                                      "-N {} " \
-                                                      "-a {} " \
-                                                      "-s {} " \
-                                                      "-i {} " \
-                                                      "-f {} " \
-                                                      "-eps {} " \
-                                                      "-nu {} " \
-                                                      "-mu {} " \
-                                                      "-p {} " \
-                                                      "{} ".format(N,
-                                                                  a,
-                                                                  s,
-                                                                  args.iterations,
-                                                                  fair,
-                                                                  eps,
-                                                                  nu,
-                                                                  mu,
-                                                                  base_save_path_seed,
-                                                                  "-pid $(Process)" if args.queue_num else "")
+                for a in args.alpha:
+                    alpha_path = "{}/alpha_{}".format(experiment_path, a)
+                    Path(alpha_path).mkdir(parents=True, exist_ok=True)
 
-                                # if args.fairness_type is not None:
-                                #     for extension in _fairness_extensions(args, lambdas, build=True):
-                                #         file.write("arguments = {} {}\n".format(command, extension))
-                                #         file.write("queue {}\n".format(args.queue_num
-                                #                                        if args.queue_num is not None else ""))
-                                # else:
+                    for s in args.seeds:
+                        base_save_path_seed = "{}/seed_{}".format(alpha_path, s)
+                        Path(base_save_path_seed).mkdir(parents=True, exist_ok=True)
 
-                                        file.write("arguments = {}\n".format(command))
-                                        file.write("queue {}\n".format(args.queue_num
-                                                                   if args.queue_num is not None else ""))
+                        for N in args.total_data:
+                            for mu in args.mu:
+                                for nu in args.nu:
+                                    for eps in args.eps:
+                                            command = "exp/main_expg.py " \
+                                                          "-N {} " \
+                                                          "-a {} " \
+                                                          "-s {} " \
+                                                          "-i {} " \
+                                                          "-f {} " \
+                                                          "-eps {} " \
+                                                          "-nu {} " \
+                                                          "-mu {} " \
+                                                          "-d {} " \
+                                                          "-p {} " \
+                                                          "{} ".format(N,
+                                                                      a,
+                                                                      s,
+                                                                      args.iterations,
+                                                                      f,
+                                                                      eps,
+                                                                      nu,
+                                                                      mu,
+                                                                      d,
+                                                                      base_save_path_seed,
+                                                                      "-pid $(Process)" if args.queue_num else "")
 
-        print("## Finished building {} ##".format(sub_file_name))
+                                    # if args.fairness_type is not None:
+                                    #     for extension in _fairness_extensions(args, lambdas, build=True):
+                                    #         file.write("arguments = {} {}\n".format(command, extension))
+                                    #         file.write("queue {}\n".format(args.queue_num
+                                    #                                        if args.queue_num is not None else ""))
+                                    # else:
+
+                                            file.write("arguments = {}\n".format(command))
+                                            file.write("queue {}\n".format(args.queue_num
+                                                                       if args.queue_num is not None else ""))
+
+            print("## Finished building {} ##".format(sub_file_name))
 
 
 def _multi_run(args, base_path):
-    # this is called when executed
-    data_folder = "Uncalibrated"
-    base_path = "{}/{}".format(base_path, data_folder)
-    Path(base_path).mkdir(parents=True, exist_ok=True)
+    oracle_path = "{}/Oracle".format(base_path)
+    Path(oracle_path).mkdir(parents=True, exist_ok=True)
 
-    for fair in args.fairness_type:
+    for d in args.data:
+        data_path = "{}/{}".format(oracle_path, d)
+        Path(data_path).mkdir(parents=True, exist_ok=True)
 
-        base_save_path = "{}/{}".format(base_path, fair)
-        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+        for f in args.fairness_type:
+            fair_path = "{}/{}".format(data_path, f)
+            Path(fair_path).mkdir(parents=True, exist_ok=True)
 
-        timestamp = time.gmtime()
-        ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
-        ex_folder = fair
-        base_save_path = "{}/{}_Oracle_Uncalibrated_{}".format(base_save_path, ts_folder, ex_folder)
-        Path(base_save_path).mkdir(parents=True, exist_ok=True)
+            timestamp = time.gmtime()
+            ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
+            experiment_path = "{}/{}_Oracle_{}_{}".format(fair_path, ts_folder, d, f)
+            Path(experiment_path).mkdir(parents=True, exist_ok=True)
 
-        err_path = "{}/error".format(base_save_path)
-        Path(err_path).mkdir(parents=True, exist_ok=True)
-        log_path = "{}/log".format(base_save_path)
-        Path(log_path).mkdir(parents=True, exist_ok=True)
-        output_path = "{}/output".format(base_save_path)
-        Path(output_path).mkdir(parents=True, exist_ok=True)
+            # err_path = "{}/error".format(experiment_path)
+            # Path(err_path).mkdir(parents=True, exist_ok=True)
+            # log_path = "{}/log".format(experiment_path)
+            # Path(log_path).mkdir(parents=True, exist_ok=True)
+            # output_path = "{}/output".format(experiment_path)
+            # Path(output_path).mkdir(parents=True, exist_ok=True)
 
-        for s in args.seeds:
-            seed_path = "{}/seed_{}".format(base_save_path, s)
-            Path(seed_path).mkdir(parents=True, exist_ok=True)
+            for a in args.alpha:
+                alpha_path = "{}/alpha_{}".format(experiment_path, a)
+                Path(alpha_path).mkdir(parents=True, exist_ok=True)
 
-            for N in args.total_data:
-                for a in args.alpha:
-                    for mu in args.mu:
+                for s in args.seeds:
+                    seed_path = "{}/seed_{}".format(alpha_path, s)
+                    Path(seed_path).mkdir(parents=True, exist_ok=True)
+
+                    for N in args.total_data:
+                        for mu in args.mu:
                             for nu in args.nu:
                                 for eps in args.eps:
+
                                     command = ["python3", "exp/main_expg.py",
                                                "-N", str(N),
                                                "-a", str(a),
                                                "-s", str(s),
                                                "-i", str(args.iterations),
-                                               "-f", str(fair),
+                                               "-f", str(f),
                                                "-eps", str(eps),
                                                "-nu", str(nu),
                                                "-mu", str(mu),
+                                               "-d", str(d),
                                                "-p", str(seed_path)
                                                ]
                                     print('before subprocess.run - command', command)
                                     subprocess.run(command)
-                            # if args.fairness_type is not None:
-                            #     for extension in _fairness_extensions(args, lambdas, build=False):
-                            #         temp_command = deepcopy(command)
-                            #         temp_command.extend(extension)
-                            #         subprocess.run(temp_command)
-                            # else:
-
 
 
 
@@ -226,6 +228,8 @@ if __name__ == "__main__":
                         help="list of accuracy parameters of the oracle to be used")
     parser.add_argument('-mu', '--mu', type=float, nargs='+', required=True,
                         help="minimum probability for simulating the bandit")
+    parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
+                        help="select the distribution (FICO, Uncalibrated)")
     parser.add_argument('-p', '--path', type=str, required=True, help="save path for the results")
 
     # Build script parameter

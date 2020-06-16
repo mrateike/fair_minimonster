@@ -22,7 +22,7 @@ from src.fairlearn.metrics import mean_prediction_group_summary, accuracy_score_
     equalized_odds_ratio, true_positive_rate_difference, true_positive_rate_ratio, \
     false_positive_rate_difference, false_positive_rate_ratio, utility
 # import matplotlib.pyplot as plt
-from data.uncalibrated_score import UncalibratedScore
+# from data.uncalibrated_score import UncalibratedScore
 from data.util import stack, serialize_dictionary, save_dictionary
 from src.evaluation.plotting import plot_median, plot_mean
 from src.evaluation.training_evaluation import UTILITY
@@ -64,13 +64,9 @@ class Evaluation(object):
 
 
         self.XA_test, self.a_test, self.y_test = B.sample_test_dataset(TT, seed)
-        # x_test = pd.DataFrame(x_test.squeeze())
-        # self.y_test = pd.Series(y_test.squeeze(), name='label')
-        # a_test = pd.Series(a_test.squeeze(), name='sensitive_features_X')
-        # self.XA_test = pd.concat([x_test, a_test == 1], axis=1).astype(float)
-        # self.a_test = a_test.rename('sensitive_features')
-
-
+        test_data = {'A_test': self.a_test.tolist(), 'Y_test': self.y_test.tolist()}
+        test_path = "{}test_data.json".format(path)
+        save_dictionary(test_data, test_path)
 
     def evaluate(self, pi):
         dec_prob = pi.predict(self.XA_test).squeeze()
@@ -111,15 +107,13 @@ class Evaluation(object):
         TPR = true_positive_rate_difference(y_test, scores, sensitive_features=A_test)
         ratio_TPR = true_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
 
-
-
         FPR = false_positive_rate_difference(y_test, scores, sensitive_features=A_test)
         # ratio_FPR = false_positive_rate_ratio(y_test, scores, sensitive_features=A_test)
 
         EO = equalized_odds_difference(y_test, scores, sensitive_features=A_test)
         # ratio_EO = equalized_odds_ratio(y_test, scores, sensitive_features=A_test)
 
-        print("--- EVALUATION  ---")
+        # print("--- EVALUATION  ---")
         classifier_summary = pd.concat([acc, mean_pred], axis=1)
         display(classifier_summary)
 
@@ -179,12 +173,12 @@ class Evaluation(object):
         pred_dict = {0: mean_pred0, 1: mean_pred1, 'overall': mean_pred}
         results_dict = {'acc_dict': acc_dict, 'pred_dict': pred_dict, 'util': util, 'DP': DP, 'EOP': EOP}
 
-        evaluation_path = "{}/measures.json".format(self.path)
+        evaluation_path = "{}measures.json".format(self.path)
         save_dictionary(results_dict, evaluation_path)
 
         # ---- save decisions
         scores = self.scores_dict
-        decisions_path = "{}/decisions.json".format(self.path)
+        decisions_path = "{}decisions.json".format(self.path)
         save_dictionary(scores, decisions_path)
 
         # ---- plot four measures over iterations -----
@@ -229,7 +223,7 @@ class Evaluation(object):
                      'DP_Q025': DP_Q025, 'DP_Q975': DP_Q975, \
                      'EOP_Q025': EOP_Q025, 'EOP_Q975': EOP_Q975}
 
-        parameter_save_path = "{}/evaluation_mean.json".format(self.path)
+        parameter_save_path = "{}evaluation.json".format(self.path)
         save_dictionary(data_mean, parameter_save_path)
 
         # # print('---- Floyds stats ----')
@@ -258,7 +252,7 @@ class Evaluation(object):
         EOP = results_dict['EOP']
 
         # print('results_dict', results_dict)
-        my_plot(path, util, acc, DP, EOP)
+        # my_plot(path, util, acc, DP, EOP)
 
         acc_mean = np.mean(acc)
         util_mean = np.mean(util)
@@ -275,6 +269,8 @@ class Evaluation(object):
         EOP_FQ = np.percentile(EOP, q=25)
         EOP_TQ = np.percentile(EOP, q=75)
 
+
+
         acc_STD = np.std(acc)
         util_STD = np.std(util)
         DP_STD = np.std(DP)
@@ -289,6 +285,7 @@ class Evaluation(object):
         EOP_Q025 = np.quantile(EOP, 0.025)
         EOP_Q975 = np.quantile(EOP, 0.975)
 
+
         data_mean = {'UTIL_mean': util_mean, 'UTIL_FQ': util_FQ, 'UTIL_TQ': util_TQ, \
                      'ACC_mean': acc_mean, 'ACC_FQ': acc_FQ, 'ACC_TQ': acc_TQ, \
                      'DP_mean': DP_mean, 'DP_FQ': DP_FQ, 'DP_TQ': DP_TQ, \
@@ -298,6 +295,7 @@ class Evaluation(object):
                      'ACC_Q025': acc_Q025, 'ACC_Q975': acc_Q975, \
                      'DP_Q025': DP_Q025, 'DP_Q975': DP_Q975, \
                      'EOP_Q025': EOP_Q025, 'EOP_Q975': EOP_Q975}
+
 
         parameter_save_path = "{}/evaluation_mean.json".format(path)
         save_dictionary(data_mean, parameter_save_path)
@@ -319,12 +317,15 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
     current_column = 0
 
     for key, value in measure_dict.items():
-
         axis = figure.add_subplot(grid[current_row, current_column])
         axis.plot(value)
         axis.set_xlabel(x_label)
         axis.title.set_text(key)
         axis.set_xscale("linear")
+        if current_column ==0 and current_row == 0 :
+            axis.set_ylim(-0.5, 0.5)
+        else:
+            axis.set_ylim(0, 1)
         #
         # axis.fill_between(y_FQ,
         #                   y_TQ,
@@ -344,7 +345,8 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
             current_row = 1
 
 
-    file_path = "{}/my_plot.png".format(base_save_path)
+    file_path = "{}plot.png".format(base_save_path)
+
     plt.savefig(file_path)
     tpl.save(file_path.replace(".png", ".tex"),
              figure=figure,
@@ -378,6 +380,10 @@ def my_plot2(base_save_path, A1, A2, B1, B2):
         axis.set_xlabel(x_label)
         axis.title.set_text(key)
         axis.set_xscale("linear")
+
+        if current_column ==1:
+            axis.axis('square')
+
         #
         # axis.fill_between(y_FQ,
         #                   y_TQ,
@@ -395,6 +401,8 @@ def my_plot2(base_save_path, A1, A2, B1, B2):
         else:
             current_column = 1
             current_row = 1
+
+    # Todo: new inserted
 
 
     file_path = "{}regret.png".format(base_save_path)

@@ -15,10 +15,12 @@ if root_path not in sys.path:
 
 
 def _build_submit_file(args, base_path):
+
     bandit_path = "{}/Bandit".format(base_path)
     Path(bandit_path).mkdir(parents=True, exist_ok=True)
 
     for bt in args.batch_type:
+
         batch_path = "{}/{}".format(bandit_path, bt)
         Path(batch_path).mkdir(parents=True, exist_ok=True)
 
@@ -44,7 +46,7 @@ def _build_submit_file(args, base_path):
                 Path(output_path).mkdir(parents=True, exist_ok=True)
 
                 print('///// In build submit /////')
-                sub_file_name = "./{}_{}_{}.sub".format(bt, d, f)
+                sub_file_name = "./Bandit_{}_{}_{}.sub".format(bt, d, f)
                 print("## Started building {} ##".format(sub_file_name))
 
                 with open(sub_file_name, "w") as file:
@@ -75,11 +77,15 @@ def _build_submit_file(args, base_path):
                     file.write("# ----------------------------------------------------------------------- #\n\n")
 
                     for bs in args.batch_size:
-                        batch_path = "{}/batch_{}".format(experiment_path, bs)
-                        Path(batch_path).mkdir(parents=True, exist_ok=True)
+                        print('bs', bs)
+                        if bs == '1':
+                            batch_size_path = experiment_path
+                        else:
+                            batch_size_path = "{}/batch_{}".format(experiment_path, bs)
+                            Path(batch_size_path).mkdir(parents=True, exist_ok=True)
 
                         for a in args.alpha:
-                            alpha_path = "{}/alpha_{}".format(batch_path, a)
+                            alpha_path = "{}/alpha_{}".format(batch_size_path, a)
                             Path(alpha_path).mkdir(parents=True, exist_ok=True)
 
                             for s in args.seeds:
@@ -130,7 +136,7 @@ def _build_submit_file(args, base_path):
 
 
 def _multi_run(args, base_path):
-    print('in multi_run')
+
 
     bandit_path = "{}/Bandit".format(base_path)
     Path(bandit_path).mkdir(parents=True, exist_ok=True)
@@ -140,7 +146,9 @@ def _multi_run(args, base_path):
         Path(batch_path).mkdir(parents=True, exist_ok=True)
 
         for d in args.data:
+            # print('data', d)
             data_path = "{}/{}".format(batch_path, d)
+            # print('data_path', data_path)
             Path(data_path).mkdir(parents=True, exist_ok=True)
 
             for f in args.fairness_type:
@@ -151,21 +159,26 @@ def _multi_run(args, base_path):
                 ts_folder = time.strftime("%Y-%m-%d-%H-%M-%S", timestamp)
                 ex_folder = 'Bandit'
                 experiment_path = "{}/{}_{}_{}_{}_{}".format(fair_path, ts_folder, ex_folder, bt, d, f)
+                print('experiment_path', experiment_path)
                 Path(experiment_path).mkdir(parents=True, exist_ok=True)
 
-                err_path = "{}/error".format(experiment_path)
-                Path(err_path).mkdir(parents=True, exist_ok=True)
-                log_path = "{}/log".format(experiment_path)
-                Path(log_path).mkdir(parents=True, exist_ok=True)
-                output_path = "{}/output".format(experiment_path)
-                Path(output_path).mkdir(parents=True, exist_ok=True)
+                # err_path = "{}/error".format(experiment_path)
+                # Path(err_path).mkdir(parents=True, exist_ok=True)
+                # log_path = "{}/log".format(experiment_path)
+                # Path(log_path).mkdir(parents=True, exist_ok=True)
+                # output_path = "{}/output".format(experiment_path)
+                # Path(output_path).mkdir(parents=True, exist_ok=True)
 
                 for bs in args.batch_size:
-                    batch_path = "{}/batch_{}".format(experiment_path, bs)
-                    Path(batch_path).mkdir(parents=True, exist_ok=True)
+
+                    if bs == '1':
+                        batch_size_path = experiment_path
+                    else:
+                        batch_size_path = "{}/batch_{}".format(experiment_path, bs)
+                        Path(batch_size_path).mkdir(parents=True, exist_ok=True)
 
                     for a in args.alpha:
-                        alpha_path = "{}/alpha_{}".format(batch_path, a)
+                        alpha_path = "{}/alpha_{}".format(batch_size_path, a)
                         Path(alpha_path).mkdir(parents=True, exist_ok=True)
 
                         for s in args.seeds:
@@ -212,7 +225,7 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--fairness_type', type=str, nargs='+', required=True,
                         help="select the type of fairness (DP, EO)")
     parser.add_argument('-bt', '--batch_type', type=str, nargs='+', required=True,
-                        help='batches type used (exp, lin, warm)')
+                        help='batches type used (no_batch, exp, lin, warm_start)')
     parser.add_argument('-bs', '--batch_size', type=str, nargs='+', required=False,
                         help='batches size used for lin (required) otherwise ignored')
 

@@ -30,7 +30,7 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, m
 
     B = Simulators.DatasetBandit(dataset)
 
-    dataset = B.sample_dataset(T1+T2, seed)
+    dataset = B.sample_dataset((T1+T2), seed)
     dataset1 = dataset.iloc[:T1]
     dataset2 = dataset.iloc[T1:(T1+T2)]
 

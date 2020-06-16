@@ -70,8 +70,7 @@ class _Lagrangian:
             self.obj.load_data(X, y_loss2)
 
             #self.n2 = self.X.shape[0]
-        else:
-            print('None in Lagrange')
+
 
 
         # self.classifier_family.load()
