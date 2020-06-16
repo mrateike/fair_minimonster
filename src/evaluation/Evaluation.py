@@ -126,6 +126,9 @@ class Evaluation(object):
 
         return results_dict
 
+
+
+
     def save_stats(self, results_dict, scores):
 
         acc = results_dict['ACC']
@@ -151,7 +154,6 @@ class Evaluation(object):
         self.util_list.append(util)
         self.scores_dict.update({self.i_scores: scores.tolist()})
         self.i_scores +=1
-
         if self.scores_array is None:
             self.scores_array = np.array([scores]).T
         else:
@@ -168,7 +170,6 @@ class Evaluation(object):
         EOP = self.TPR_list
         util = self.util_list
 
-
         acc_dict = {0: accuracy1, 1: accuracy0, 'overall': acc}
         pred_dict = {0: mean_pred0, 1: mean_pred1, 'overall': mean_pred}
         results_dict = {'acc_dict': acc_dict, 'pred_dict': pred_dict, 'util': util, 'DP': DP, 'EOP': EOP}
@@ -184,44 +185,12 @@ class Evaluation(object):
         # ---- plot four measures over iterations -----
         my_plot(self.path, util, acc, DP, EOP)
 
-        # ---- get averages and std  ------
-        acc_mean = np.mean(acc)
-        util_mean = np.mean(util)
-        DP_mean = np.mean(DP)
-        EOP_mean = np.mean(EOP)
+        acc_av_dict = save_mean_std_quantiles(acc)
+        util_av_dict = save_mean_std_quantiles(util)
+        DP_av_dict = save_mean_std_quantiles(DP)
+        EOP_av_dict = save_mean_std_quantiles(EOP)
 
-        acc_FQ = np.percentile(acc, q=25)
-        acc_TQ = np.percentile(acc, q=75)
-        util_FQ = np.percentile(util, q=25)
-        util_TQ = np.percentile(util, q=75)
-        DP_FQ = np.percentile(DP, q=25)
-        DP_TQ = np.percentile(DP, q=75)
-        EOP_FQ = np.percentile(EOP, q=25)
-        EOP_TQ = np.percentile(EOP, q=75)
-
-        acc_STD = np.std(acc)
-        util_STD = np.std(util)
-        DP_STD = np.std(DP)
-        EOP_STD = np.std(EOP)
-
-        acc_Q025 = np.quantile(acc, 0.025)
-        acc_Q975 = np.quantile(acc, 0.975)
-        util_Q025 = np.quantile(util, 0.025)
-        util_Q975 = np.quantile(util, 0.975)
-        DP_Q025 = np.quantile(DP, 0.025)
-        DP_Q975 = np.quantile(DP, 0.975)
-        EOP_Q025 = np.quantile(EOP, 0.025)
-        EOP_Q975 = np.quantile(EOP, 0.975)
-
-        data_mean = {'UTIL_mean': util_mean, 'UTIL_FQ': util_FQ, 'UTIL_TQ': util_TQ, \
-                     'ACC_mean': acc_mean, 'ACC_FQ': acc_FQ, 'ACC_TQ': acc_TQ, \
-                     'DP_mean': DP_mean, 'DP_FQ': DP_FQ, 'DP_TQ': DP_TQ, \
-                     'EOP_mean': EOP_mean, 'EOP_FQ': EOP_FQ, 'EOP_TQ': EOP_TQ, \
-                     'UTIL_STD': util_STD, 'ACC_STD': acc_STD, 'DP_STD': DP_STD, 'EOP_STD': EOP_STD, \
-                     'UTIL_Q025': util_Q025, 'UTIL_Q975': util_Q975, \
-                     'ACC_Q025': acc_Q025, 'ACC_Q975': acc_Q975, \
-                     'DP_Q025': DP_Q025, 'DP_Q975': DP_Q975, \
-                     'EOP_Q025': EOP_Q025, 'EOP_Q975': EOP_Q975}
+        data_mean = {'UTIL': util_av_dict, 'ACC': acc_av_dict, 'DP': DP_av_dict, 'EOP': EOP_av_dict}
 
         parameter_save_path = "{}evaluation.json".format(self.path)
         save_dictionary(data_mean, parameter_save_path)
@@ -244,61 +213,62 @@ class Evaluation(object):
         #     statistics=floyds_stats, update_iterations=updates)
 
 
-    def save_plot_process_results(self, results_dict, path):
+    # def save_plot_process_results(self, results_dict, path):
+    #
+    #     acc = results_dict['acc_dict']['overall']
+    #     util = results_dict['util']
+    #     DP = results_dict['DP']
+    #     EOP = results_dict['EOP']
+    #
+    #     acc_av_dict = save_mean_std_quantiles(acc)
+    #     util_av_dict = save_mean_std_quantiles(util)
+    #     DP_av_dict = save_mean_std_quantiles(DP)
+    #     EOP_av_dict = save_mean_std_quantiles(EOP)
+    #
+    #     data_mean = {'UTIL': util_av_dict, 'ACC': acc_av_dict , 'DP' : DP_av_dict, 'EOP' :EOP_av_dict}
+    #     parameter_save_path = "{}/evaluation_mean.json".format(path)
+    #     save_dictionary(data_mean, parameter_save_path)
 
-        acc = results_dict['acc_dict']['overall']
-        util = results_dict['util']
-        DP = results_dict['DP']
-        EOP = results_dict['EOP']
+def save_mean_std_quantiles(measure):
 
-        # print('results_dict', results_dict)
-        # my_plot(path, util, acc, DP, EOP)
+    mean = np.mean(measure)
+    FQ = np.percentile(measure, q=25)
+    TQ = np.percentile(measure, q=75)
+    STD = np.std(measure)
+    Q025 = np.quantile(measure, 0.025)
+    Q975 = np.quantile(measure, 0.975)
 
-        acc_mean = np.mean(acc)
-        util_mean = np.mean(util)
-        DP_mean = np.mean(DP)
-        EOP_mean = np.mean(EOP)
+    dict = {}
+    dict['mean'] = mean
+    dict['FQ'] = FQ
+    dict['TQ'] = TQ
+    dict['TQ'] = TQ
+    dict['STD'] = STD
+    dict['Q025'] = Q025
+    dict['Q975'] = Q975
 
-
-        acc_FQ = np.percentile(acc, q=25)
-        acc_TQ = np.percentile(acc, q=75)
-        util_FQ = np.percentile(util, q=25)
-        util_TQ = np.percentile(util, q=75)
-        DP_FQ = np.percentile(DP, q=25)
-        DP_TQ = np.percentile(DP, q=75)
-        EOP_FQ = np.percentile(EOP, q=25)
-        EOP_TQ = np.percentile(EOP, q=75)
-
-
-
-        acc_STD = np.std(acc)
-        util_STD = np.std(util)
-        DP_STD = np.std(DP)
-        EOP_STD = np.std(EOP)
-
-        acc_Q025 = np.quantile(acc, 0.025)
-        acc_Q975 = np.quantile(acc, 0.975)
-        util_Q025 = np.quantile(util, 0.025)
-        util_Q975 = np.quantile(util, 0.975)
-        DP_Q025 = np.quantile(DP, 0.025)
-        DP_Q975 = np.quantile(DP, 0.975)
-        EOP_Q025 = np.quantile(EOP, 0.025)
-        EOP_Q975 = np.quantile(EOP, 0.975)
+    return dict
 
 
-        data_mean = {'UTIL_mean': util_mean, 'UTIL_FQ': util_FQ, 'UTIL_TQ': util_TQ, \
-                     'ACC_mean': acc_mean, 'ACC_FQ': acc_FQ, 'ACC_TQ': acc_TQ, \
-                     'DP_mean': DP_mean, 'DP_FQ': DP_FQ, 'DP_TQ': DP_TQ, \
-                     'EOP_mean': EOP_mean, 'EOP_FQ': EOP_FQ, 'EOP_TQ': EOP_TQ, \
-                     'UTIL_STD': util_STD, 'ACC_STD': acc_STD, 'DP_STD': DP_STD, 'EOP_STD': EOP_STD, \
-                     'UTIL_Q025': util_Q025, 'UTIL_Q975': util_Q975, \
-                     'ACC_Q025': acc_Q025, 'ACC_Q975': acc_Q975, \
-                     'DP_Q025': DP_Q025, 'DP_Q975': DP_Q975, \
-                     'EOP_Q025': EOP_Q025, 'EOP_Q975': EOP_Q975}
 
+def get_average_regret(regret_dict):
 
-        parameter_save_path = "{}/evaluation_mean.json".format(path)
-        save_dictionary(data_mean, parameter_save_path)
+    regt = regret_dict[list(regret_dict.keys())[0]]
+    regt_cum = regret_dict[list(regret_dict.keys())[1]]
+    regT = regret_dict[list(regret_dict.keys())[2]]
+    regT_cum = regret_dict[list(regret_dict.keys())[3]]
+
+    # Rt = regt_cum[-1]
+
+    RT = regT_cum[-1]
+    regt_av_dict = save_mean_std_quantiles(regt)
+    regt_cum_av_dict = save_mean_std_quantiles(regt_cum)
+    regT_av_dict = save_mean_std_quantiles(regT)
+    regT_cum_av_dict = save_mean_std_quantiles(regT_cum)
+
+    av_reg_dict = {'RT': RT, 'regt': regt_av_dict, 'regt_cum': regt_cum_av_dict, 'regT': regT_av_dict, 'regT_cum': regT_cum_av_dict}
+    return av_reg_dict
+
 
 
 def my_plot(base_save_path, utility, accuracy, DP, EOP):

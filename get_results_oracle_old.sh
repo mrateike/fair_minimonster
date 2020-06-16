@@ -14,23 +14,48 @@ if [ -e "$1" ]; then
 	fi
 fi
 
-echo "data;fair;seed;eps;util_mean;util_FQ;util_TQ;acc_mean;acc_FQ;acc_TQ;DP_mean;DP_FQ;DP_TQ;FPR_mean;FPR_FQ;FPR_TQ;util_std;acc_std;DP_std;FPR_std;util_Q025;util_Q975;acc_Q025;acc_Q975;DP_Q025;DP_Q975;FPR_Q025;FPR_Q975" > "$1"
+echo "file;data;fair;alpha;seed;eps;mu;nu;N;util_mean;util_FQ;util_TQ;acc_mean;acc_FQ;acc_TQ;DP_mean;DP_FQ;DP_TQ;FPR_mean;FPR_FQ;FPR_TQ;util_std;acc_std;DP_std;FPR_std;util_Q025;util_Q975;acc_Q025;acc_Q975;DP_Q025;DP_Q975;FPR_Q025;FPR_Q975" > "$1"
 
-for file in $(find "$2" -name "evaluation_mean.json"); do
-	# uncal
-    echo "$file" |cut -d "_" -f3 | tr -d "\n" >> "$1"
+for file in $(find "$2" -name "*evaluation.json*"); do
+	
+	#oracle, var, loss, dec
+	echo "$file" | cut -d "_" -f10 | cut -d "/" -f2 | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
-	# DP
+	# # uncal
+ #    echo "$file" |cut -d "_" -f3 | tr -d "\n" >> "$1"
+	# echo -n ";" >> "$1"
+
+	# dataset (Uncalibrated, FICO)
+	echo "$file" | cut -d "_" -f3 | cut -d "/" -f1 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# fairness (DP, EO)
 	echo "$file" | cut -d "_" -f4 | cut -d "/" -f1 | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
-	# seed
+	# alpha
 	echo "$file" | cut -d "_" -f5 | cut -d "/" -f1 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+ 
+	# seed 
+	echo "$file" | cut -d "_" -f6 | cut -d "/" -f1 |tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	# eps
-	echo "$file" | cut -d "_" -f6 | cut -d "/" -f1 | cut -d "-" -f1 | tr -d "\n" >> "$1"
+	echo "$file" | cut -d "_" -f7 | cut -d "/" -f1 | cut -d "-" -f1 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	#  mu
+	echo "$file" | cut -d "_" -f8 | cut -d "/" -f1 | cut -d "-" -f1 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	#  nu
+	echo "$file" | cut -d "_" -f9 | cut -d "/" -f1 | cut -d "N" -f1 | rev | cut -c 2- | rev | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	#  N
+	echo "$file" | cut -d "_" -f10 | cut -d "/" -f1 | cut -d "-" -f1 | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	# util_mean

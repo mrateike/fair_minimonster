@@ -77,7 +77,6 @@ def _build_submit_file(args, base_path):
                     file.write("# ----------------------------------------------------------------------- #\n\n")
 
                     for bs in args.batch_size:
-                        print('bs', bs)
                         if bs == '1':
                             batch_size_path = experiment_path
                         else:
@@ -170,7 +169,6 @@ def _multi_run(args, base_path):
                 # Path(output_path).mkdir(parents=True, exist_ok=True)
 
                 for bs in args.batch_size:
-
                     if bs == '1':
                         batch_size_path = experiment_path
                     else:

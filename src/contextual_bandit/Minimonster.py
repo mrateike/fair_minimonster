@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from src.contextual_bandit import Argmin
-from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot, my_plot2
+from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot, my_plot2, get_average_regret
 from src.evaluation.training_evaluation import Statistics
 from data.util import save_dictionary
 from src.evaluation.training_evaluation import UTILITY
@@ -236,19 +236,12 @@ class MiniMonster(object):
         # self.statistics_final.evaluate(best_pi)
 
 
-        # ----- Calculate regret at each step ------------
-
-        print('len(real_loss)', len(real_loss))
-        print('len(best_loss_t)', len(best_loss_t))
+        # ----- Calculate roundwise regret ------------
 
         regt0 = [max((real_loss[i] - best_loss_t[i]), 0) for i in range(0, len(real_loss))]
         regt0_cum = np.cumsum(regt0).tolist()
         regt = [(real_loss[i] - best_loss_t[i]) for i in range(0, len(real_loss))]
         regt_cum = np.cumsum(regt).tolist()
-
-        regret_path = "{}/round_".format(self.regret_path)
-
-        my_plot2(regret_path, regt, regt_cum, regt0, regt0_cum)
 
         # ----- Calculate regret T in hindsight ------------
         subset = self.history[['features', 'sensitive_features_X']]
@@ -263,88 +256,63 @@ class MiniMonster(object):
                 print('ERROR Minimonster fit')
             best_loss_T.append(l)
 
-        regT0 = [max((real_loss[i] - best_loss_T[i]) ,0) for i in range(0,len(real_loss))]
-        regT0_cum = np.cumsum(regT0).tolist()
-        RT0 = regT0_cum[-1]
+
         regT = [(real_loss[i] - best_loss_T[i]) for i in range(0, len(real_loss))]
         regT_cum = np.cumsum(regT).tolist()
-        RT = regT_cum[-1]
+        regT0 = [max((real_loss[i] - best_loss_T[i]), 0) for i in range(0, len(real_loss))]
+        regT0_cum = np.cumsum(regT0).tolist()
 
-        regret_path2 = "{}/finalT_".format(self.regret_path)
 
+        #---- plotting ----
+
+        regret_path = "{}/round_".format(self.regret_path)
+        my_plot2(regret_path, regt, regt_cum, regt0, regt0_cum)
+
+        regret_path2 = "{}/finalT_regret".format(self.regret_path)
         my_plot2(regret_path2, regT, regT_cum, regT0, regT0_cum)
 
+        # regret_path2 = "{}/regret".format(self.regret_path)
+        # my_plot2(regret_path2, regt, regT_cum, regt0, regT0_cum, title)
+
+
+        # ----- dictionary building--------
         reg_dict = {}
-
-        reg_dict['RT'] = RT
-        reg_dict['RT0'] = RT0
-
         reg_dict['regt'] = regt
         reg_dict['regt_cum'] = regt_cum
-
-        reg_dict['regt0'] = regt0
-        reg_dict['regt0_cum'] = regt0_cum
-
         reg_dict['regT'] = regT
         reg_dict['regT_cum'] = regT_cum
 
-        reg_dict['regT0'] = regT0
-        reg_dict['regT0_cum'] = regT0_cum
+        reg0_dict = {}
+        reg0_dict['regt0'] = regt0
+        reg0_dict['regt0_cum'] = regt0_cum
+        reg0_dict['regT0'] = regT0
+        reg0_dict['regT0_cum'] = regT0_cum
 
         regret_path = "{}/regret.json".format(self.regret_path)
         save_dictionary(reg_dict, regret_path)
 
+        regret_path = "{}/regret0.json".format(self.regret_path)
+        save_dictionary(reg0_dict, regret_path)
 
+        #---- average evaluations ---
+        # reg_dict = {}
+        # reg_dict['regt'] = regt
+        # reg_dict['regT_cum'] = regT_cum
+        # reg_dict['regt0'] = regt0
+        # reg_dict['regT0_cum'] = regT0_cum
+        #
+        # av_regret_dict = get_average_regret(reg_dict)
+        # regret_path = "{}/regret_evaluation.json".format(self.regret_path)
+        # save_dictionary(av_regret_dict, regret_path)
 
+        av_regret_dict = get_average_regret(reg_dict)
+        regret_path = "{}/Nregret_evaluation.json".format(self.regret_path)
+        save_dictionary(av_regret_dict, regret_path)
 
+        av_regret0_dict = get_average_regret(reg0_dict)
+        regret_path = "{}/0regret_evaluation.json".format(self.regret_path)
+        save_dictionary(av_regret0_dict, regret_path)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    # def predict(self, X, Q, best_pi):
-    #     decisions = []
-    #     curr_idx = 0
-    #     prob = np.zeros(2)
-    #
-    #     for item in X:
-    #         features = pd.DataFrame({"credit_score_feature": item[0].squeeze(), "example_sensitive_featrue": item[1].squeeze()},
-    #                             index=[curr_idx])
-    #         x = Context.Context(curr_idx, features)
-    #
-    #         for item in Q:
-    #             pi = item[0]
-    #             w = item[1]
-    #             decis = pi.get_decision(x)
-    #             prob[decis] += w
-    #
-    #         assert best_pi != None, 'no best policy'
-    #
-    #         dec = best_pi.get_decision(x)
-    #         w = 1 - np.sum([z[1] for z in Q])
-    #         prob[dec] += w
-    #
-    #         assert prob[1] >= 0 and prob[1] <= 1, 'probability needs to be [0,1]'
-    #
-    #         d = np.random.binomial(1, prob[1])
-    #
-    #         if isinstance(d, np.ndarray):
-    #             d = d.squeeze()
-    #         decisions.append(d)
-    #         curr_idx +=1
-    #         prob = np.zeros(2)
-    #
-    #     return decisions
 
     def sample(self, x, Q, best_pi, m, statistics):
         # xa = pd.DataFrame
