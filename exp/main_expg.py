@@ -45,6 +45,7 @@ if __name__ == "__main__":
                         help="minimum probability for simulating the bandit")
     parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
                         help="select the distribution (FICO, Uncalibrated)")
+
     parser.add_argument('-p', '--path', type=str, required=True, help="save path for the results")
 
     args = parser.parse_args()

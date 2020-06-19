@@ -76,12 +76,13 @@ def _build_submit_file(args, base_path):
                     file.write("# QUEUE                                                                   #\n")
                     file.write("# ----------------------------------------------------------------------- #\n\n")
 
+                    # for bs in args.batch_size:
+                    #     if bs == '1':
+                    #         batch_size_path = experiment_path
+                    #     else:
                     for bs in args.batch_size:
-                        if bs == '1':
-                            batch_size_path = experiment_path
-                        else:
-                            batch_size_path = "{}/batch_{}".format(experiment_path, bs)
-                            Path(batch_size_path).mkdir(parents=True, exist_ok=True)
+                        batch_size_path = "{}/batch_{}".format(experiment_path, bs)
+                        Path(batch_size_path).mkdir(parents=True, exist_ok=True)
 
                         for a in args.alpha:
                             alpha_path = "{}/alpha_{}".format(batch_size_path, a)
@@ -95,30 +96,33 @@ def _build_submit_file(args, base_path):
                                     for eps in args.eps:
                                         for mu in args.mu:
                                             for nu in args.nu:
-                                                command = "exp/run.py " \
-                                                          "-N {} " \
-                                                          "-a {} " \
-                                                          "-s {} " \
-                                                          "-f {} " \
-                                                          "-bt {} " \
-                                                          "-bs {} " \
-                                                          "-eps {} " \
-                                                          "-nu {} " \
-                                                          "-mu {} " \
-                                                          "-d {} " \
-                                                          "-p {} " \
-                                                          "{} ".format(N,
-                                                                      a,
-                                                                      s,
-                                                                      f,
-                                                                      bt,
-                                                                      bs,
-                                                                      eps,
-                                                                      nu,
-                                                                      mu,
-                                                                      d,
-                                                                      seed_path,
-                                                                      "-pid $(Process)" if args.queue_num else "")
+                                                for i in args.iterations:
+                                                    command = "exp/run.py " \
+                                                              "-N {} " \
+                                                              "-a {} " \
+                                                              "-s {} " \
+                                                              "-f {} " \
+                                                              "-bt {} " \
+                                                              "-bs {} " \
+                                                              "-eps {} " \
+                                                              "-nu {} " \
+                                                              "-mu {} " \
+                                                              "-d {} " \
+                                                              "-i {} " \
+                                                              "-p {} " \
+                                                              "{} ".format(N,
+                                                                          a,
+                                                                          s,
+                                                                          f,
+                                                                          bt,
+                                                                          bs,
+                                                                          eps,
+                                                                          nu,
+                                                                          mu,
+                                                                          d,
+                                                                          i,
+                                                                          seed_path,
+                                                                          "-pid $(Process)" if args.queue_num else "")
 
                                                 # if args.fairness_type is not None:
                                                 #     for extension in _fairness_extensions(args, lambdas, build=True):
@@ -131,7 +135,7 @@ def _build_submit_file(args, base_path):
                                                 file.write("queue {}\n".format(args.queue_num
                                                                                    if args.queue_num is not None else ""))
 
-                print("## Finished building {} ##".format(sub_file_name))
+                    print("## Finished building {} ##".format(sub_file_name))
 
 
 def _multi_run(args, base_path):
@@ -169,11 +173,11 @@ def _multi_run(args, base_path):
                 # Path(output_path).mkdir(parents=True, exist_ok=True)
 
                 for bs in args.batch_size:
-                    if bs == '1':
-                        batch_size_path = experiment_path
-                    else:
-                        batch_size_path = "{}/batch_{}".format(experiment_path, bs)
-                        Path(batch_size_path).mkdir(parents=True, exist_ok=True)
+                    # if bs == '1':
+                    #     batch_size_path = experiment_path
+                    # else:
+                    batch_size_path = "{}/batch_{}".format(experiment_path, bs)
+                    Path(batch_size_path).mkdir(parents=True, exist_ok=True)
 
                     for a in args.alpha:
                         alpha_path = "{}/alpha_{}".format(batch_size_path, a)
@@ -187,24 +191,26 @@ def _multi_run(args, base_path):
                                 for eps in args.eps:
                                     for mu in args.mu:
                                         for nu in args.nu:
+                                            for i in args.iterations:
 
-                                            command = ["python3", "exp/run.py",
-                                                       "-N", str(N),
-                                                       "-a", str(a),
-                                                       "-s", str(s),
-                                                       "-f", str(f),
-                                                       "-bt", str(bt),
-                                                       "-bs", str(bs),
-                                                       "-eps", str(eps),
-                                                       "-nu", str(nu),
-                                                       "-mu", str(mu),
-                                                       "-d", str(d),
-                                                       "-p", str(seed_path)
-                                                       ]
+                                                command = ["python3", "exp/run.py",
+                                                           "-N", str(N),
+                                                           "-a", str(a),
+                                                           "-s", str(s),
+                                                           "-f", str(f),
+                                                           "-bt", str(bt),
+                                                           "-bs", str(bs),
+                                                           "-eps", str(eps),
+                                                           "-nu", str(nu),
+                                                           "-mu", str(mu),
+                                                           "-d", str(d),
+                                                           "-i", str(i),
+                                                           "-p", str(seed_path)
+                                                           ]
 
-                                            print('before subprocess.run - command', command)
+                                                print('before subprocess.run - command', command)
 
-                                            subprocess.run(command)
+                                                subprocess.run(command)
 
 
 
@@ -237,6 +243,8 @@ if __name__ == "__main__":
     # Configuration parameters
     parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
                         help="select the distribution (FICO, Uncalibrated)")
+    parser.add_argument('-i', '--iterations', type=str, nargs='+', required=True,
+                        help="number of iterations of the bandit coordinate decent algo")
     parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
 
 

@@ -37,6 +37,9 @@ if __name__ == "__main__":
     # Configuration parameters
     parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
                         help="select the distribution (FICO, Uncalibrated)")
+
+    parser.add_argument('-i', '--iterations', type=str, nargs='+', required=True,
+                        help="number of iterations of the bandit coordinate decent algo")
     parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
 
 
@@ -49,15 +52,16 @@ if __name__ == "__main__":
     mu = "mu_{}".format((args.mu[0]))
     nu = "nu_{}".format((args.nu[0]))
     N = "N_{}".format((args.total_data[0]))
+    i = "it_{}".format((args.iterations[0]))
 
-    base_save_path = "{}/{}_{}_{}_{}".format(base_save_path, eps, mu, nu, N)
+    base_save_path = "{}/{}_{}_{}_{}_{}".format(base_save_path, eps, mu, nu, N, i)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
-    N = args.total_data[0]
+    T = args.total_data[0]
     # training data
-    T = round(0.8 * N)
+    TT = 200
     # testing data
-    TT = N - T
+    # TT = N - T
     # phase 1 phase 2 data
     T1 = round(T ** (2 * args.alpha[0]))
     T2 = T - T1
@@ -72,8 +76,9 @@ if __name__ == "__main__":
     seed = args.seeds[0]
     mu = args.mu[0]
 
+    num_iterations = args.iterations[0]
     print('Im running')
-    play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, base_save_path, seed, mu)
+    play(T, args.alpha[0], TT, fairness, batch, batchsize, eps, nu, dataset, base_save_path, seed, mu, num_iterations)
     print('/////// FINISHED ///////////')
 
 
