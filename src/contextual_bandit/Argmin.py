@@ -24,14 +24,16 @@ def argmin(eps, nu, fairness, dataset1, dataset2=None):
         eps=eps,
         nu=nu)
 
-    if dataset2 is None:
+    if dataset2.empty:
         expgrad_XA.fit()
 
     else:
         A = dataset2.loc[:, 'sensitive_features']
-        L = dataset2.filter(items=['l0', 'l1'])
-        XA = dataset2.drop(columns=['sensitive_features', 'l0', 'l1'])
-
+        L = dataset2.loc[:,['l0', 'l1']]
+        XA = dataset2.loc[:,['features', 'sensitive_features']]
+        # print('A', A)
+        # print('L', L)
+        # print('XA', XA)
         expgrad_XA.fit(
             XA,
             L,

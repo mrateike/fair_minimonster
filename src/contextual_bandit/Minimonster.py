@@ -6,11 +6,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from src.contextual_bandit import Argmin
-from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot, my_plot2, get_average_regret
+from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot, get_average_regret
 from src.evaluation.training_evaluation import Statistics
 from data.util import save_dictionary
 from src.evaluation.training_evaluation import UTILITY
 import math
+import time
 
 
 import os
@@ -23,12 +24,12 @@ class MiniMonster(object):
     Implementation of MiniMonster with a scikit_learn learning algorithm as the AMO.
     """
 
-    def __init__(self, B, fairness, dataset1, eps, nu, TT, test_seed, dataset2, path, mu):
+    def __init__(self, B, fairness, eps, nu, TT, test_seed, path, mu, num_iterations):
         self.B = B
         # XA, L, A, Y
-        self.dataset1 = dataset1
-        self.dataset2 = dataset2.drop(['l0', 'l1'], axis=1)
-        self.history = dataset1
+        # self.dataset1 = dataset1
+        # self.dataset2 = dataset2.drop(['l0', 'l1'], axis=1)
+        self.num_iterations = num_iterations
 
         loss_path = "{}/loss_policies_results".format(path)
         Path(loss_path).mkdir(parents=True, exist_ok=True)
@@ -42,20 +43,25 @@ class MiniMonster(object):
         Path(dec_path).mkdir(parents=True, exist_ok=True)
         dec_path = "{}/dec_".format(dec_path)
 
+        self.process_path = "{}/bandit_process_results".format(path)
+        Path(self.process_path).mkdir(parents=True, exist_ok=True)
+
         self.regret_path = "{}/bandit_regret_results".format(path)
         Path(self.regret_path).mkdir(parents=True, exist_ok=True)
 
         self.statistics_loss = Evaluation(TT, test_seed, loss_path, B)
         self.statistics_var = Evaluation(TT, test_seed, var_path, B)
         self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B)
-
+        self.varOracle_time_list = []
+        self.num_varOracle_calls = 0
+        self.num_lossOracle_calls = 0
+        self.path = path
 
         self.mu = mu
 
         # XA, L, A (supervised)
 
         # print('history', self.history)
-        self.num_amo_calls = 0
         self.mu = 0.1
         self.fairness = fairness
 
@@ -68,63 +74,39 @@ class MiniMonster(object):
         self.EO_dict = {}
         self.auc_dict = {}
         self.mean_pred_dict = {}
+        self.lossOracle_time_list = []
+        self.list_num_policies_added = []
+        self.list_cum_loss_total_time = []
+        self.best_loss_t = []
+        self.loop_time_list = []
+        self.num_update_Q = 0
 
 
 
 
-    def fit(self, T2, T1, batch, batchsize):
-        real_loss = []
-        best_loss_T = []
-        best_loss_t = []
+    # def fit(self, T2, T1, batch, batchsize):
+    def fit(self, dataset, alpha, batch, batchsize):
+        self.real_loss = []
+        # best_loss_t = []
 
 
+        # loss_history = pd.DataFrame()
 
-
-        XA = pd.DataFrame()
-        A = pd.Series(name='sensitive_features')
-        L = pd.DataFrame(columns=['l0', 'l1'])
-        dataset2_collected = pd.DataFrame()
-
-        # for _solve_Opt
-        psi = 4*(math.e -2)*np.log(T2+T1)
-
-
-        # predictions = {}
-        Q = []
-        # best_pi = None
-
-
-
-        print('--- EVALUATION --  first best policy on phase 1 data')
-        # print('self.dataset1', self.dataset1)
-        best_pi  = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1)
-        self.statistics_loss.evaluate(best_pi.model)
-
-        for i in self.dataset1['l1'].values:
-            real_loss.append(i)
-        for i in range(0, self.dataset1.shape[0]):
-            individual1 = self.dataset1.iloc[i]
-            xa1 = individual1.loc[['features', 'sensitive_features_X']].to_frame().T
-            d1 = best_pi.predict(xa1).squeeze()[0]
-            if d1 == 1:
-                l1 = individual1.loc['l1']
-            elif d1 == 0:
-                l1 = individual1.loc['l0']
-
-            best_loss_t.append(l1)
-
-        print('len(real_loss)', len(real_loss))
-        print('len(best_loss_t)', len(best_loss_t))
-
+        T = dataset.shape[0]
+        T1 = int(round(T ** (2 * alpha),0))
+        T2 = T-T1
+        print('T', T)
+        print('T1', T1)
+        print('T2', T2)
 
         # ------------- batch settings
         training_points = []
         m = 1
         if batch == "exp":
             while True:
-                training_points.append(int(2 ** (m-1)))
+                training_points.append(int(2 ** (m - 1)))
                 m += 1
-                if (2 ** (m-1)) > T2:
+                if (2 ** (m - 1)) > T2:
                     break
         elif batch == 'lin':
             while True:
@@ -134,17 +116,17 @@ class MiniMonster(object):
                 if int(m * batchsize) > T2:
                     break
         elif batch == 'warm_start':
-           training_points = [3,5]
-           m +=2
-           while True:
-               training_points.append(int(m ** 2))
-               m += 1
-               if int(m ** 2) > T2:
-                   break
+            training_points = [3, 5]
+            m += 2
+            while True:
+                training_points.append(int(m ** 2))
+                m += 1
+                if int(m ** 2) > T2:
+                    break
 
         elif batch == 'no_batch':
             # need to collect a few first such that we do not get a label problem
-            m=1
+            m = 1
             while True:
                 training_points.append(int(m))
                 m += 1
@@ -153,269 +135,280 @@ class MiniMonster(object):
         else:
             print('ERROR in batches')
 
+        print('training_points', training_points)
+
+        # ----------- run loop --------------
+
+        history = dataset.iloc[:T1]
+        print('history', history)
+        print('history.loc[:,l1]', history.loc[:,'l1'].tolist())
+
+        #----IPS & non IPS Regret
+        self.real_loss.extend(history.loc[:,'l1'].tolist())
 
 
-        #----------- run loop --------------
-        m=0
+        # for _solve_Opt
+        psi = 4*(math.e -2)*np.log(T)
+
+        m = 0
         t = 0
+        while t <= T2:
 
-        while t < T2:
-            t+= 1
-            m+=1
-            individual = self.dataset2.iloc[(t-1)]
+            if m == 0:
+                batchsize = 0
 
-            xa = individual.loc[['features', 'sensitive_features_X']].to_frame().T
-            a = pd.Series(individual.loc['sensitive_features'], name='sensitive_features', index=[individual.name])
+            Q, best_pi = self.update(history, T1, psi, batchsize, m)
 
-            XA = XA.append(xa)
-            A = A.append(a)
+            if t == T2:
+                break
+
+            print('time t ', t)
+            print('batch m ', m)
+            # print('training_points ', training_points)
+            # print('T2', T2)
+
+            if m < len(training_points):
+                batchpoint = training_points[m]
+                if m ==0:
+                    batchsize = batchpoint
+                else:
+                    batchsize = batchpoint - t
+            else:
+                batchsize = T2-t
+                batchpoint = T2
+
+            individual = dataset.iloc[(T1+t):(T1+batchpoint)]
+            print('individual', individual)
+
+            t += batchsize
+
+
+            xa = individual.loc[:,['features', 'sensitive_features']]
+
 
 
             d, p = self.sample(xa, Q, best_pi, m, self.statistics_decisions)
-            y = individual.loc['label']
+            p = pd.DataFrame(p, index=individual.index)
+            y = individual.loc[:,'label']
             l = self.B.get_loss(d, y)
-            real_loss.append(l)
 
+            lip = l.div(p).to_numpy()
+            lip[list(range(0, len(lip))),1-d] = 0
 
+            ips_loss = pd.DataFrame(lip, index=l.index)
 
-            # IPS loss, attention: order of columns might change
-            # sometimes [l1, l0], sometimes [l0, l1]
-            ips_loss = pd.DataFrame()
-            ips_loss.at[individual.name,str(d)] = l / p
-            ips_loss.at[individual.name, str(1-d)] = 0
-            ips_loss = ips_loss.rename(columns={'0':'l0','1':'l1'})
+            # --- IPS Regret ----
+            # self.real_loss.extend(ips_loss.lookup(ips_loss.index, d).tolist())
+            # --- non IPS Regret
+            self.real_loss.extend(l.lookup(l.index, d).tolist())
 
+            ips_loss = ips_loss.rename(columns={0:'l0', 1:'l1'})
+            # Todo: Careful! Added label here
+            dataset_update = pd.concat([individual.loc[:,['features', 'sensitive_features', 'label']],ips_loss], axis =1)
+            history = pd.concat([history, dataset_update], axis = 0, ignore_index=True)
 
-            L = L.append(ips_loss)
+            m += 1
 
+        # --- end of fit -------
+        cum_loop_time = np.cumsum(self.loop_time_list)
+        cum_varOracle_time = np.cumsum(self.varOracle_time_list)
+        # cum_lossOracle_time = np.cumsum(self.lossOracle_time_list)
 
+        process_data = {}
+        process_data['cum-loop-time'] = cum_loop_time.tolist()
+        process_data['cum-varOracle-time'] = cum_varOracle_time.tolist()
+        # print('loop_time_list', loop_time_list)
+        # process_data['list-loop-time'] = self.loop_time_list
+        # process_data['cum-lossOracle-time'] = cum_lossOracle_time.tolist()
+        # print('self.lossOracle_time_list', self.lossOracle_time_list)
+        # process_data['list-lossOracle-time'] = self.lossOracle_time_list
+        # print('self.varOracle_time_list', self.varOracle_time_list)
+        # process_data['list-varOracle-time'] = self.varOracle_time_list
+        # process_data['list_cum_loss_total_time'] = self.list_cum_loss_total_time
 
+        print('num_lossOracle_calls', self.num_lossOracle_calls)
+        print('self.num_varOracle_calls', self.num_varOracle_calls)
+        print('self.list_num_policies_added', self.list_num_policies_added)
+        print('training points', training_points)
 
-            # ---------- update batch ( push new ones) --------
-            if t in training_points:
-                print('in update')
+        process_data['num_lossOracle_calls'] = self.num_lossOracle_calls
+        process_data['num_varOracle_calls'] = self.num_varOracle_calls
+        process_data['num_var_policies added'] = self.list_num_policies_added
 
-                # real_loss.extend(losses)
-                # data collected in this batch
-                dataset_batch = pd.concat([XA, L, A], axis=1)
-
-                # data collected so far in phase 2
-                dataset2_collected = dataset2_collected.append(dataset_batch)
-
-                print('--- EVALUATION -- batch update ', m, 'at time', t, 'best policy')
-                # print('dataset2_collected',dataset2_collected)
-                best_pi = Argmin.argmin(self.eps, self.nu, self.fairness, self.dataset1, dataset2_collected)
-
-                db = best_pi.predict(xa).squeeze()[0]
-                if db == 1:
-                    lb = ips_loss.filter(['l1']).values.squeeze()
-                elif db == 0:
-                    lb = ips_loss.filter(['l0']).values.squeeze()
-                best_loss_t.append(lb)
-
-
-                self.statistics_loss.evaluate(best_pi.model)
-                self.num_amo_calls += 1
-
-
-                # data collected from phase 1 and phase 2 so far
-                self.history = self.history.append(dataset_batch, ignore_index=True)
-
-                # update Q
-                Q = self._solve_op(self.history, T1, m, best_pi, psi)
-
-                # clear batch containers
-                XA = pd.DataFrame()
-                A = pd.Series(name='sensitive_features')
-                L = pd.DataFrame()
-                losses = []
-                # ---------- END  batch update --------
-
-            # ---------- END  loop --------
-
-        # self.statistics_final.evaluate(best_pi)
+        process_path = "{}/process_measures.json".format(self.process_path)
+        save_dictionary(process_data, process_path)
 
 
         # ----- Calculate roundwise regret ------------
+        timesteps = range(1, len(self.real_loss)+1)
 
-        regt0 = [max((real_loss[i] - best_loss_t[i]), 0) for i in range(0, len(real_loss))]
-        regt0_cum = np.cumsum(regt0).tolist()
-        regt = [(real_loss[i] - best_loss_t[i]) for i in range(0, len(real_loss))]
-        regt_cum = np.cumsum(regt).tolist()
+        cum_real_loss = np.cumsum(self.real_loss)
+        # print('self.real_loss', self.real_loss)
+        exp_real_loss = cum_real_loss/timesteps
+        # print('exp_real_loss', exp_real_loss)
+        cum_exp_real_loss = np.cumsum(exp_real_loss)
+        # print('cum_exp_real_loss', cum_exp_real_loss)
+
+        # print('self.best_loss_t', self.best_loss_t)
+        cum_best_loss_t = np.cumsum(self.best_loss_t)
+        # print('cum_best_loss_t', cum_best_loss_t)
+        exp_best_loss = cum_best_loss_t / timesteps
+        # print('exp_best_loss', exp_best_loss)
+        cum_exp_best_loss = np.cumsum(exp_best_loss)
+        # print('cum_exp_best_loss', cum_exp_best_loss)
+
+        reg = cum_exp_real_loss - cum_exp_best_loss
+        # print('reg', reg)
+        reg[reg < 0] = 0
+        # print('reg', reg)
+
 
         # ----- Calculate regret T in hindsight ------------
-        subset = self.history[['features', 'sensitive_features_X']]
-        for i, xa in subset.iterrows():
-            xa = xa.to_frame().T
-            d = best_pi.get_decision(xa).squeeze()[0]
-            if d == 1:
-                l = self.history.loc[i,'l1']
-            elif d == 0:
-                l = self.history.loc[i, 'l0']
-            else:
-                print('ERROR Minimonster fit')
-            best_loss_T.append(l)
+        xa = history.loc[:,['features', 'sensitive_features']]
+        ips = history.loc[:,['l0', 'l1']]
+        db, _ = best_pi.get_decision(xa)
+        ips.columns = range(ips.shape[1])
+        best_loss_T = ips.lookup(ips.index, db).tolist()
 
+        cum_best_loss_T = np.cumsum(best_loss_T )
+        exp_best_loss_T = cum_best_loss_T / timesteps
+        cum_exp_best_loss_T = np.cumsum(exp_best_loss_T)
 
-        regT = [(real_loss[i] - best_loss_T[i]) for i in range(0, len(real_loss))]
-        regT_cum = np.cumsum(regT).tolist()
-        regT0 = [max((real_loss[i] - best_loss_T[i]), 0) for i in range(0, len(real_loss))]
-        regT0_cum = np.cumsum(regT0).tolist()
+        regT = cum_exp_real_loss - cum_exp_best_loss_T
+        regT[regT < 0] = 0
 
+        x_axis = [0]
+        x_axis.extend(training_points)
+        x_axis = np.array(x_axis) + T1
+        x_axis = x_axis.tolist()
+        if training_points[-1] < T2:
+            x_axis.extend([T])
 
-        #---- plotting ----
+        # print('x_axis length', len(x_axis ))
+        # print('x_axis', x_axis)
+        # print('self.num_update_Q', self.num_update_Q )
 
-        regret_path = "{}/round_".format(self.regret_path)
-        my_plot2(regret_path, regt, regt_cum, regt0, regt0_cum)
+        plot_dict = {}
+        plot_dict['x_axis_time'] = x_axis
+        plot_dict['x_axis_reg'] = timesteps
+        plot_dict['x_label'] = 'individuals'
+        plot_dict['y_label0'] = 'update-Q time / update'
+        plot_dict['y_label1'] = 'process Reg_t0'
+        plot_dict['y_label2'] = 'in loop: cum varOracle_time / update'
+        plot_dict['y_label3'] = 'hindsight Reg_T0'
+        plot_dict['square'] = 'NO'
+        plot_dict['process'] = 'YES'
+        plot_dict['evaluation'] = 'NO'
+        process_path = "{}/process_".format(self.process_path)
 
-        regret_path2 = "{}/finalT_regret".format(self.regret_path)
-        my_plot2(regret_path2, regT, regT_cum, regT0, regT0_cum)
+        print('reg', reg)
+        my_plot(process_path, plot_dict, self.loop_time_list, \
+                reg, self.varOracle_time_list, regT)
 
-        # regret_path2 = "{}/regret".format(self.regret_path)
-        # my_plot2(regret_path2, regt, regT_cum, regt0, regT0_cum, title)
-
-
-        # ----- dictionary building--------
-        reg_dict = {}
-        reg_dict['regt'] = regt
-        reg_dict['regt_cum'] = regt_cum
-        reg_dict['regT'] = regT
-        reg_dict['regT_cum'] = regT_cum
 
         reg0_dict = {}
-        reg0_dict['regt0'] = regt0
-        reg0_dict['regt0_cum'] = regt0_cum
-        reg0_dict['regT0'] = regT0
-        reg0_dict['regT0_cum'] = regT0_cum
+        reg0_dict['regt0_cum'] = reg.tolist()
+        reg0_dict['regT0_cum'] = regT.tolist()
 
-        regret_path = "{}/regret.json".format(self.regret_path)
-        save_dictionary(reg_dict, regret_path)
-
-        regret_path = "{}/regret0.json".format(self.regret_path)
+        regret_path = "{}/0regret.json".format(self.regret_path)
         save_dictionary(reg0_dict, regret_path)
 
-        #---- average evaluations ---
-        # reg_dict = {}
-        # reg_dict['regt'] = regt
-        # reg_dict['regT_cum'] = regT_cum
-        # reg_dict['regt0'] = regt0
-        # reg_dict['regT0_cum'] = regT0_cum
-        #
-        # av_regret_dict = get_average_regret(reg_dict)
-        # regret_path = "{}/regret_evaluation.json".format(self.regret_path)
-        # save_dictionary(av_regret_dict, regret_path)
-
-        av_regret_dict = get_average_regret(reg_dict)
-        regret_path = "{}/Nregret_evaluation.json".format(self.regret_path)
-        save_dictionary(av_regret_dict, regret_path)
-
-        av_regret0_dict = get_average_regret(reg0_dict)
-        regret_path = "{}/0regret_evaluation.json".format(self.regret_path)
-        save_dictionary(av_regret0_dict, regret_path)
 
 
-    def sample(self, x, Q, best_pi, m, statistics):
+    def update(self, history, T1, psi, batch_size, m):
+
+        dataset1 = history.loc[:T1-1]
+        dataset2 = history.loc[T1:].drop(['label'], axis=1)
+
+        start = time.time()
+        best_pi = Argmin.argmin(self.eps, self.nu, self.fairness, dataset1, dataset2)
+        stop = time.time()
+        self.num_lossOracle_calls += 1
+        pi_loss_time = np.array([stop - start])
+        self.lossOracle_time_list.append(pi_loss_time[0])
+
+        batch = history.iloc[-batch_size:]
+        print('batch', batch)
+        batch_xa = batch.loc[:,['features', 'sensitive_features']]
+        batch_best_decisions, _ = best_pi.predict(batch_xa)
+        batch_best_decisions = pd.Series(batch_best_decisions).astype(int)
+
+
+        # --- IPS regret
+        # df = batch.loc[:, ['l0', 'l1']]
+        # df.columns = range(df.shape[1])
+        # self.best_loss_t.extend(df.lookup(df.index, batch_best_decisions).tolist())
+        # --- non IPS regret
+        y = batch.loc[:, 'label']
+        # print('y', y)
+        # print('batch_best_decisions', batch_best_decisions)
+        l = self.B.get_loss(batch_best_decisions, y)
+        # print('l', l)
+        self.best_loss_t.extend(l.lookup(l.index, batch_best_decisions).tolist())
+
+
+        print('--- EVALUATION -- batch update ', m, 'best_policy')
+        self.statistics_loss.evaluate(best_pi.model)
+
+        start = time.time()
+        Q = self._solve_op(history, T1, m, best_pi, psi)
+        stop = time.time()
+        loop_time = np.array([stop - start])
+        self.num_update_Q +=1
+        self.loop_time_list.append(loop_time[0])
+        # print('Q  ', Q)
+
+        return Q, best_pi
+
+    def sample(self, xa, Q, best_pi, m, statistics):
         # xa = pd.DataFrame
         # Q = [Policy,float]
         # best_pi = Policy
 
+        # print('sample xa, Q, best_pi, m,', xa, Q, best_pi, m)
+
+        pdec = np.zeros((xa.shape[0], 2))
+
         xa_test = statistics.XA_test
-        p = np.zeros(2)
-        p_t = np.zeros((xa_test.shape[0], 2))
-        if Q == []:
-            dec_prob = best_pi.predict(x).squeeze()
-            dec = int(dec_prob[0])
-            prob = dec_prob[1]
-            p[dec] = prob
-            p[1-dec] = 1-prob
+        pdt = np.zeros((xa_test.shape[0], 2))
 
-            dec_prob_t = best_pi.predict(xa_test)
-            dec_t = dec_prob_t[:, 0].astype(int)
-            prob_t = dec_prob_t[:, 1]
+        for item in Q:
+            pi = item[0]
+            w = item[1]
 
-            for i in range(0, len(dec_t)):
-                dt = dec_t[i]
-                pt = prob_t[i]
-                p_t[i][dt] = pt
-                p_t[i][1-dt] = 1-pt
+            _, p = pi.get_decision(xa)
+            pdec = np.add(pdec, w * p)
 
+            _, pt = pi.predict(xa_test)
+            pdt = np.add(pdt, w * pt)
 
-
-
-        else:
-            for item in Q:
-                pi = item[0]
-                w = item[1]
-
-                dec_prob = pi.get_decision(x).squeeze()
-                dec = int(dec_prob[0])
-                prob = dec_prob[1]
-                p[dec] += w*prob
-                p[1-dec]+=w*(1-prob)
-
-                dec_prob_t = best_pi.predict(xa_test)
-                dec_t = dec_prob_t[:, 0].astype(int)
-                prob_t = dec_prob_t[:, 1]
-
-                for i in range(0, len(dec_t)):
-                    dt = dec_t[i]
-                    pt = prob_t[i]
-                    p_t[i][dt] = w*pt
-                    p_t[i][1 - dt] = w*(1 - pt)
-
-                # print('p_t', p_t)
-
-            ## Mix in leader
-            bp_dec_prob = best_pi.get_decision(x).squeeze()
-            bp_dec = int(bp_dec_prob[0])
-            bp_prob = bp_dec_prob[1]
-
-            bp_dec_prob_t = best_pi.get_decision(xa_test)
-            # print('bp_dec_prob_t', bp_dec_prob_t)
-            bp_dec_t = bp_dec_prob_t[:,0]
-            bp_prob_t = bp_dec_prob_t[:,1]
-
-
-            # print('Q', Q)
-            bp_w = 1 - np.sum([q[1] for q in Q])
-
-            p[bp_dec] += (bp_w*bp_prob)
-            p[1-bp_dec] += (bp_w*(1-bp_prob))
-
-            for i in range(0, len(bp_dec_t)):
-                bp_dt = int(bp_dec_t[i])
-                bp_pt = bp_prob_t[i]
-                p_t[i][bp_dt] += (bp_w * bp_pt)
-                p_t[i][(1 - bp_dt)] += (bp_w * (1 - bp_pt))
-
-
-
-        # print('before mu p_t', p_t)
+        ## Mix in leader
+        w_bp = 1 - np.sum([q[1] for q in Q])
         mu = self._get_mu(m)
-        p = (1 - 2 *  mu) * p + mu
-        p_t = (1 - 2 * mu) * p_t + mu
-        # print('after mu p_t', p_t)
 
-        # assert p[1] >= 0 and p[1] <= 1 and p[1]+p[0] <=1, 'probability needs to be [0,1]'
+        _, pb = best_pi.get_decision(xa)
+        pdec = np.add(pdec, w_bp * pb)
+        pdec = (1 - 2 * mu) * pdec + mu
 
-        random_threshold = np.random.rand(1)
-        dec = (p[1] >= random_threshold) * 1
-        dec = dec.squeeze()
+        _, pbt = best_pi.get_decision(xa_test)
+        pdt = np.add(pdt, w_bp * pbt)
+        pdt = (1 - 2 *  mu) * pdt + mu
 
-        for i in range(0, len(p_t)):
-            random_threshold = np.random.rand(1)
-            dec_t[i] = (p_t[i][1] >= random_threshold) * 1
-            dec_t[i] = dec_t[i].squeeze()
+        ## Decision making
+        random_threshold = np.random.rand(len(xa))
+        dec = (pdec[:,1] >= random_threshold) * 1
+        dec = dec
 
-        # print('dec_t', dec_t)
-        # 1 / 0
 
+        random_thresholdt = np.random.rand(len(xa_test))
+        dect = (pdt[:, 1] >= random_thresholdt) * 1
+        dect = dect.squeeze()
+
+        scores_test = pd.Series(dect)
         print('--- EVALUATION -- learners decision making')
-        scores_test = pd.Series(dec_t)
-        # print('scores_test', scores_test)
         statistics.evaluate_scores(scores_test)
 
-        return dec, p[dec]
+        return dec, pdec
 
     def _get_mu(self, t):
         """
@@ -424,7 +417,11 @@ class MiniMonster(object):
         # a = 1.0/(4)
         # b = np.sqrt(np.log(16.0*(self.t**2)*self.B.N/self.delta)/float(4*self.t))
         a = self.mu
-        b = self.mu * np.sqrt(2) / np.sqrt(t)
+        # print('t', t)
+        if t == 0:
+            b = np.inf
+        else:
+            b = self.mu * np.sqrt(2) / np.sqrt(t)
         c = np.min([a, b])
         return np.min([1, c])
         # return 0.1
@@ -435,167 +432,125 @@ class MiniMonster(object):
         Main optimization logic for MiniMonster.
         """
         print('----- BEGIN SOLVE OP ----------')
+        num_policies_added = 0
+        pi_var_total_time = 0
+
         mu = self._get_mu(m)
 
-        # print('H', H)
         t = H.shape[0]
 
         # Todo: implement warm start option
         Q = []  ## self.weights
-        # ## Warm-starting Q = Q
-
 
         predictions = {}
-
-        # H needs xa, l1, l0
-        leader_loss, predictions = self.get_cum_loss(H, best_pi, predictions)
-
-
         q_losses = {}
-        # only makes sense, if it is a warm start, otherwise Q is empty anyway
-        # for item in Q:
-        #     pi = item[0]
-        #     (tmp,predictions) = self.get_cum_loss(H, pi, predictions, features=features)
-        #     q_losses[pi] = tmp
+
+        leader_loss, predictions = self.get_cum_loss(H, best_pi, predictions)
 
         iterations = 0
 
-        # normally loop here small iterations (because otherwise get a problem of <2 labels
-        updated = True
-        while updated and iterations < 20:
-            iterations += 1
-            updated = False
 
-            ## First IF statement, leader_reward needs to be IPS as well as q_rewards, deleted self.B.K*(leader_rew..)
-            score = np.sum([x[1] * (4 + (q_losses[x[0]] - leader_loss) / (psi * t * mu)) for x in Q])
+        while iterations < int(self.num_iterations):
+            iterations += 1
+
+            score = np.sum([item[1] * (4 + ((q_losses[item[0]] - leader_loss) / (psi * t * mu))) for item in Q])
 
             if score > 4:
-                # print('---- First Constraint: broken ----- score ', score, '> 4')
                 c = 4 / score
-                Q = [(x[0], c * x[1]) for x in Q]
-                updated = True
+                Q = [(item[0], c * item[1]) for item in Q]
             else:
                 print('')
-                # print('---- First Constraint: OK ----- score', score)
-
-            Vpi_dataset = pd.DataFrame()
-            Spi_dataset = pd.DataFrame()
-            Dpimin_dataset = pd.DataFrame()
-            Dpinormal_dataset = pd.DataFrame()
-
-            # sum over all dataset t (phase 1 and 2)
-            # print('H.index', H.index)
-            for i in H.index:
-
-                # x = pd.DataFrame(H.loc[i, ['features','sensitive_features_X']]).transpose()
-                # x = x.reset_index()
-                # a = pd.Series(H.loc[i, 'sensitive_features'], name='sensitive_features')
-
-                # Todo:2 times because later 2 times (?)
-                loss = [H.loc[i, 'l0'], H.loc[i, 'l1']]
 
 
+            q = np.zeros((len(H),2))
+            for item in Q:
+                pi = item[0]
+                w = item[1]
+                p1 = predictions[pi].iloc[:,1].to_numpy()
+                p0 = 1-p1
+                p = np.stack((p0, p1), axis=1)
+                q = np.add(q, w * p)
 
-                q = np.zeros(2, dtype=np.longfloat)
+            q = (1.0 - 2 * mu) * q + (mu)
 
-                for item in Q:
-                    pi = item[0]
-                    w = item[1]
-                    q[int(predictions[pi][i][0])] += w
+            v = 1.0 / (t * q)
+            s = 1.0 / (t * (q ** 2))
 
-                q = (1.0 - 2*mu) * q + (mu)
+            loss = H.loc[:,['l0', 'l1']].to_numpy()
+            # reg = loss - leader_loss
+            # reg[reg < 0] = 0
+            # bt = reg / (t * psi * mu)
 
+            bt = loss
 
-                v = 1 / (t * q)
-                l = [(ell *psi * mu) / t for ell in loss]
-                s = 1.0 / (t * (q ** 2))
+            _H = H.loc[:, ['features', 'sensitive_features', 'label']]
 
+            loss1 = pd.DataFrame(bt - v, columns=['l0', 'l1'], index=H.index)
+            Dpimin_dataset = pd.concat([_H, loss1], axis=1)
 
-                _H = H.drop(columns = ['l0', 'l1']).loc[i,:].to_frame().T.reset_index(drop=True)
-
-                loss1 = pd.DataFrame([l - v], columns=['l0', 'l1'])
-                d1 = pd.concat([_H,loss1], axis=1)
-                Dpimin_dataset = Dpimin_dataset.append(d1, ignore_index=True)
-
-                loss2 = pd.DataFrame([v - l], columns=['l0', 'l1'])
-                loss2.reset_index(drop=True, inplace=True)
-                d2 = pd.concat([_H,loss2], axis=1)
-                Dpinormal_dataset = Dpinormal_dataset.append(d2, ignore_index=True)
-
-                loss3 = pd.DataFrame([v], columns=['l0', 'l1'])
-                loss3.reset_index(drop=True, inplace=True)
-                v = pd.concat([_H,loss3], axis=1)
-                Vpi_dataset = Vpi_dataset.append(v, ignore_index=True)
-
-                loss4 = pd.DataFrame([s], columns=['l0', 'l1'])
-                loss4.reset_index(drop=True, inplace=True)
-                s = pd.concat([_H,loss4], axis=1)
-                Spi_dataset = Spi_dataset.append(s, ignore_index=True)
-
-            ## AMO call
-            # print('----- AMO 2 ----------')
-
+            loss2 = pd.DataFrame(v - bt, columns=['l0', 'l1'], index=H.index)
+            Dpinormal_dataset = pd.concat([_H, loss2], axis=1)
 
             Dpimin_dataset1 = Dpimin_dataset.iloc[0:T1,:]
             Dpimin_dataset2 = Dpimin_dataset.iloc[T1:,:].drop(columns=['label'])
             # print('Dpimin_dataset1', Dpimin_dataset1)
             # print('Dpimin_dataset2', Dpimin_dataset2)
 
+            start = time.time()
             pi = Argmin.argmin(self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
+            stop = time.time()
+            pi_var_total_time = pi_var_total_time + np.array([stop - start])[0]
+            self.num_varOracle_calls += 1
 
-            self.num_amo_calls += 1
-            # print('----- END AMO 2 ----------')
-
-            ## This is mostly to make sure we have the predictions cached for this new policy
             if pi not in q_losses.keys():
-                (tmp, predictions) = self.get_cum_loss(H, pi, predictions)
-                q_losses[pi] = tmp
-                # if q_losses[pi] < leader_loss:
-                #     best_pi = pi
-                #     leader_loss = q_losses[pi]
+                pi_loss, _ = self.get_cum_loss(H, pi, predictions)
+                q_losses[pi] = pi_loss
 
             assert pi in predictions.keys(), "Uncached predictions for new policy pi"
 
-            (Dpi, predictions) = self.get_cum_loss(Dpinormal_dataset, pi, predictions)
-            Dpi = Dpi - 4 + (leader_loss / (psi * t * mu))
+            Dpi, _ = self.get_cum_loss(Dpinormal_dataset, pi, predictions)
+            Dpi = Dpi - ( 4 + leader_loss)
 
             if Dpi > 0:
-                updated = True
+                loss3 = pd.DataFrame(v, columns=['l0', 'l1'], index=H.index)
+                Vpi_dataset = pd.concat([_H, loss3], axis=1)
 
-                Vpi, ptwo = self.get_cum_loss(Vpi_dataset, pi, predictions)
-                Spi, ptwo = self.get_cum_loss(Spi_dataset, pi, predictions)
+                loss4 = pd.DataFrame(s, columns=['l0', 'l1'], index=H.index)
+                Spi_dataset = pd.concat([_H, loss4], axis=1)
 
-                toadd = (Vpi + Dpi) / (2 * (1 - mu) * Spi)
+                Vpi, _ = self.get_cum_loss(Vpi_dataset, pi, predictions)
+                Spi, _ = self.get_cum_loss(Spi_dataset, pi, predictions)
+
+                toadd = (Vpi + Dpi) / (2 * (1 - 2*mu) * Spi)
                 Q.append((pi, toadd))
-                print('--- EVALUATION -- policy high variance, update loop:', iterations)
-                self.statistics_var.evaluate(pi.model)
+                num_policies_added +=1
+
             else:
                 print('----- END SOLVE OP naturally ----------')
+                self.varOracle_time_list.append(pi_var_total_time)
+                self.list_num_policies_added.append(num_policies_added)
                 return Q
 
         print('----- END SOLVE OP ----------')
+        self.varOracle_time_list.append(pi_var_total_time)
+        self.list_num_policies_added.append(num_policies_added)
         return Q
 
     def get_cum_loss(self, dataset, pi, predictions):
         # H: DF, best_pi: Policy, pred: dict, t:int, feat:DF
 
-        # print('predictions', dataset.index)
-        # print('pi.get_all_decisions(dataset.iloc[:, 0:2])', pi.get_all_decisions(dataset.iloc[:, 0:2]))
-
         if pi not in predictions.keys():
-            ## This is going to go horribly wrong if dataset is not the right size
-            # assert len(dataset) == t, "If predictions not yet cached, dataset should have len = self.t"
-            # predictions[pi] = dict(zip([i for i in dataset.index], pi.get_all_decisions([row for index, row in dataset.iloc[:,0:2].iterrows()])))
             # Todo FIX THIS: danger with other datasets selecting only first two columns
-            predictions[pi] = dict(zip([i for i in dataset.index], pi.get_all_decisions(dataset.loc[:, ['features', 'sensitive_features_X']])))
+            values = pi.get_all_decisions(dataset.loc[:, ['features', 'sensitive_features']])
+            predictions[pi] = values
 
-        score = 0.0
-        for x in dataset.index:
-            l = dataset.filter(items=['l0', 'l1']).loc[x,:]
-            l = l.rename({'l0': 0, 'l1': 1})
-            pred, prob = predictions[pi][x]
-            score += l.loc[pred]*prob
+        prob = predictions[pi][1]
+        dec = predictions[pi][0]
+        loss_df = dataset.loc[:,['l0', 'l1']]
 
+        loss_df.columns = range(loss_df.shape[1])
+        loss = pd.Series(loss_df.lookup(loss_df.index, dec))
+        score = loss.dot(prob)
         return score, predictions
 
 

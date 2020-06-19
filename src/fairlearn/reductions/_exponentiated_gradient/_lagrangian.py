@@ -46,7 +46,7 @@ class _Lagrangian:
         # XA, L, A
         self._dataset1 = dataset1
 
-        self.X_all = dataset1.drop(['sensitive_features', 'label', 'l0', 'l1'], axis = 1)
+        self.X_all = dataset1.loc[:,['features','sensitive_features']]
         _loss1 = dataset1.loc[:, ['l0','l1']]
         _y1 = dataset1.loc[:,['label']]
         _sensitive_features1 = dataset1.loc[:,['sensitive_features']]
@@ -54,6 +54,7 @@ class _Lagrangian:
 
         self.constraints = constraints
         self.constraints.load_data1(self.X_all, _y1, sensitive_features=_sensitive_features1)
+
 
         self.obj = self.constraints.default_objective()
         self.obj.load_data1(self.X_all, _loss1)
@@ -193,7 +194,12 @@ class _Lagrangian:
 
         # Origignal was imposing n as a parameter for reweighting?
 
-        redW = redY.shape[0] * redW / redW.sum()
+        if redW.sum() == 0:
+            # print('lambda_vec', lambda_vec)
+            # print('signed_weights', signed_weights)
+            print('ERROR Lagrangian division by zero')
+        else:
+            redW = redY.shape[0] * redW / redW.sum()
         # print('call oracle: redY.shape[0]', redY.shape[0])
 
         # redY_unique = np.unique(redY)

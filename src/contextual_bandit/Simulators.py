@@ -25,23 +25,14 @@ class DatasetBandit(object):
         x, a, y = self.distribution.sample_train_dataset(T, seed)
         X = pd.Series(x.squeeze(), name='features')
         Y = pd.Series(y.squeeze(), name='label').astype(int)
-        A = pd.Series(a.squeeze(), name='sensitive_features_X').astype(int)
-        XA = pd.concat([X, A == 1], axis=1).astype(float)
-        # XA = pd.concat([X, A], axis=1).astype(float)
-        A = A.rename('sensitive_features')
-
-        return XA, A, Y
+        A = pd.Series(a.squeeze(), name='sensitive_features').astype(int)
+        return X, A, Y
 
     def sample_dataset(self, T, seed):
         x, a, y = self.distribution.sample_train_dataset(T, seed)
         X = pd.Series(x.squeeze(), name='features')
         Y = pd.Series(y.squeeze(), name='label').astype(int)
-        A = pd.Series(a.squeeze(), name='sensitive_features_X').astype(int)
-        XA = pd.concat([X, A == 1], axis=1).astype(float)
-        # XA = pd.concat([X, A], axis=1).astype(float)
-        A = A.rename('sensitive_features')
-
-
+        A = pd.Series(a.squeeze(), name='sensitive_features').astype(int)
         L = pd.DataFrame(columns=['l0', 'l1'])
 
         for i, value in Y.items():
@@ -53,23 +44,15 @@ class DatasetBandit(object):
                 L.at[i, 'l1'] = 0
             else:
                 print('ERROR: Simulator')
-        dataset = pd.concat([XA, L, A, Y], axis=1)
+        dataset = pd.concat([X, L, A, Y], axis=1)
         return dataset
 
 
     def get_loss(self, d, y):
-        # y is pd.Series
-        # d is int
 
-        if d == 0:
-            loss = 0.5
-        else:
-            if y == 0:
-                # d = 1, y = 0
-                loss = 1
-            else:
-                # d = 1, y = 1
-                loss = 0
+        l0 = pd.Series(0.5*np.ones(len(d)), index=y.index)
+        loss = pd.concat([l0,1-y], axis=1)
+        loss.columns = range(loss.shape[1])
         return loss
 
 

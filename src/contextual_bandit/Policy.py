@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 class Policy(object):
     """
@@ -31,11 +32,15 @@ class RegressionPolicy(Policy):
 
 
     def get_all_decisions(self, x):
-        # input: DF
 
         if len(x.index) == 0:
             return []
+        dec, prob = self.model.predict(x)
+        prob = pd.DataFrame(prob)
 
-        return self.model.predict(x)
+        prob_dec = prob.lookup(prob.index, dec).tolist()
+        dec_prob = list(zip(dec, prob_dec))
+        dec_prob = pd.DataFrame(dec_prob)
+        return dec_prob
 
 

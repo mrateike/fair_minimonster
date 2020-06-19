@@ -16,11 +16,12 @@ from data.util import get_list_of_seeds
 
 # class Runtime(object):
 
-def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, mu):
+def play(T, alpha, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, mu, num_iterations):
 
 
     seed_test = 45*seed
-    seed_train = 17*seed
+    # seed_train = 17*seed
+
 
 
     if fairness == "EO":
@@ -30,18 +31,18 @@ def play(T1, T2, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, m
 
     B = Simulators.DatasetBandit(dataset)
 
-    dataset = B.sample_dataset((T1+T2), seed)
-    dataset1 = dataset.iloc[:T1]
-    dataset2 = dataset.iloc[T1:(T1+T2)]
+    dataset = B.sample_dataset(T, seed)
+    # dataset1 = dataset.iloc[:T1]
+    # dataset2 = dataset.iloc[T1:(T1+T2)]
 
 
-    M = MiniMonster(B, fairness, dataset1, eps, nu, TT, seed_test, dataset2, path, mu)
+    M = MiniMonster(B, fairness, eps, nu, TT, seed_test, path, mu, num_iterations)
 
     print("------------- start fit ---------------")
     start = time.time()
 
     # input fairness
-    M.fit(T2, T1, batch, batchsize)
+    M.fit(dataset, alpha, batch, batchsize)
 
     stop = time.time()
     training_time = np.array([stop - start])

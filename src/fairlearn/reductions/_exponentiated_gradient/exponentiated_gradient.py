@@ -227,16 +227,18 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         positive_probs = probs[:, 1]
         threshold = np.random.rand(len(positive_probs))
         dec = (positive_probs >= threshold) * 1
-        dec_prob = np.array([[7,7]])
+        # dec_prob = np.array([[7,7]])
+        #
+        # i = 0
+        # for d in dec:
+        #     prop_dec = probs[i,int(d)]
+        #     dec_prob = np.append(dec_prob, [[d, prop_dec]], axis=0)
+        #     i+=1
+        # dec_prob =  dec_prob[1:, :]
+        #
+        # return dec_prob
 
-        i = 0
-        for d in dec:
-            prop_dec = probs[i,int(d)]
-            dec_prob = np.append(dec_prob, [[d, prop_dec]], axis=0)
-            i+=1
-        dec_prob =  dec_prob[1:, :]
-
-        return dec_prob
+        return dec, probs
 
     def _pmf_predict(self, X):
 

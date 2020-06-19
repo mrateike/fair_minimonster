@@ -63,15 +63,17 @@ class Evaluation(object):
         self.path = path
 
 
-        self.XA_test, self.a_test, self.y_test = B.sample_test_dataset(TT, seed)
+        x_test, self.a_test, self.y_test = B.sample_test_dataset(TT, seed)
+        self.XA_test = pd.concat([x_test,self.a_test], axis = 1)
         test_data = {'A_test': self.a_test.tolist(), 'Y_test': self.y_test.tolist()}
         test_path = "{}test_data.json".format(path)
         save_dictionary(test_data, test_path)
 
     def evaluate(self, pi):
-        dec_prob = pi.predict(self.XA_test).squeeze()
 
-        scores = pd.Series(dec_prob[:,0], name="scores_expgrad_XA").astype(int)
+        dec, _ = pi.predict(self.XA_test)
+        scores = pd.Series(dec, name="scores_expgrad_XA")
+
         results_dict = self.get_stats(self.y_test, scores, self.a_test)
         self.save_stats(results_dict, scores)
 
@@ -113,14 +115,14 @@ class Evaluation(object):
         EO = equalized_odds_difference(y_test, scores, sensitive_features=A_test)
         # ratio_EO = equalized_odds_ratio(y_test, scores, sensitive_features=A_test)
 
-        # print("--- EVALUATION  ---")
-        classifier_summary = pd.concat([acc, mean_pred], axis=1)
-        display(classifier_summary)
-
-        print("DP = ", DP)
-        print("DP_ratio = ", ratio_DP)
-        print("EO = ", TPR)
-        print("EO_ratio = ", ratio_TPR)
+        # # print("--- EVALUATION  ---")
+        # classifier_summary = pd.concat([acc, mean_pred], axis=1)
+        # display(classifier_summary)
+        #
+        # print("DP = ", DP)
+        # print("DP_ratio = ", ratio_DP)
+        # print("EO = ", TPR)
+        # print("EO_ratio = ", ratio_TPR)
 
         results_dict = {'ACC': acc, 'MEAN_PRED': mean_pred, 'DP': DP, 'FPR': FPR, 'TPR':TPR, 'EO': EO, 'UTIL': util}
 
@@ -183,7 +185,17 @@ class Evaluation(object):
         save_dictionary(scores, decisions_path)
 
         # ---- plot four measures over iterations -----
-        my_plot(self.path, util, acc, DP, EOP)
+        plot_dict = {}
+        plot_dict['x_axis'] = range(0,len(util))
+        plot_dict['x_label'] = 'test set'
+        plot_dict['y_label0'] = 'util'
+        plot_dict['y_label1'] = 'acc'
+        plot_dict['y_label2'] = 'DP'
+        plot_dict['y_label3'] = 'EOP'
+        plot_dict['square'] = 'NO'
+        plot_dict['process'] = 'NO'
+        plot_dict['evaluation'] = 'YES'
+        my_plot(self.path, plot_dict, util, acc, DP, EOP)
 
         acc_av_dict = save_mean_std_quantiles(acc)
         util_av_dict = save_mean_std_quantiles(util)
@@ -271,10 +283,68 @@ def get_average_regret(regret_dict):
 
 
 
-def my_plot(base_save_path, utility, accuracy, DP, EOP):
+# def my_plot(base_save_path, utility, accuracy, DP, EOP):
+#
+#     x_label = "time steps"
+#     measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "true positive rate" : EOP}
+#
+#     num_columns = 2
+#     num_rows = 2
+#
+#     figure = plt.figure(constrained_layout=True)
+#     grid = GridSpec(nrows=num_rows, ncols=num_columns, figure=figure)
+#
+#
+#     current_row = 0
+#     current_column = 0
+#
+#     for key, value in measure_dict.items():
+#         axis = figure.add_subplot(grid[current_row, current_column])
+#         axis.plot(value)
+#         axis.set_xlabel(x_label)
+#         axis.title.set_text(key)
+#         axis.set_xscale("linear")
+#         if current_column ==0 and current_row == 0 :
+#             axis.set_ylim(-0.5, 0.5)
+#         else:
+#             axis.set_ylim(0, 1)
+#         #
+#         # axis.fill_between(y_FQ,
+#         #                   y_TQ,
+#         #                   alpha=0.3,
+#         #                   edgecolor='#060080',
+#         #                   facecolor='#928CFF')
+#
+#         # c = 0 < 1
+#
+#         if current_column == 0 and current_row ==0:
+#             current_column =1
+#         elif current_column == 1 and current_row ==0:
+#             current_row =1
+#             current_column=0
+#         else:
+#             current_column = 1
+#             current_row = 1
+#
+#
+#     file_path = "{}plot.png".format(base_save_path)
+#
+#     plt.savefig(file_path)
+#     tpl.save(file_path.replace(".png", ".tex"),
+#              figure=figure,
+#              axis_width='\\figwidth',
+#              axis_height='\\figheight',
+#              tex_relative_path_to_data='.',
+#              extra_groupstyle_parameters={"horizontal sep=1.2cm"},
+#              extra_axis_parameters={
+#                  "scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
+#     plt.close('all')
 
-    x_label = "time steps"
-    measure_dict = {'utility': utility, 'accuracy':accuracy, 'demographic parity':DP, "true positive rate" : EOP}
+def my_plot(base_save_path, plot_dict, A1, A2, B1, B2):
+
+    x_label = plot_dict['x_label']
+
+    measure_dict = {plot_dict['y_label0']: A1, plot_dict['y_label1']: A2, plot_dict['y_label2']:B1, plot_dict['y_label3']: B2}
 
     num_columns = 2
     num_rows = 2
@@ -287,16 +357,32 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
     current_column = 0
 
     for key, value in measure_dict.items():
+
         axis = figure.add_subplot(grid[current_row, current_column])
-        axis.plot(value)
+
+        if plot_dict['process'] == 'YES':
+            if current_column == 0:
+                x = plot_dict['x_axis_time']
+            else:
+                x = plot_dict['x_axis_reg']
+            axis.plot(x, value)
+        else:
+            axis.plot(value)
+
         axis.set_xlabel(x_label)
         axis.title.set_text(key)
         axis.set_xscale("linear")
-        if current_column ==0 and current_row == 0 :
-            axis.set_ylim(-0.5, 0.5)
-        else:
-            axis.set_ylim(0, 1)
-        #
+
+        if plot_dict['square'] == 'YES':
+            if current_column ==1:
+                axis.axis('square')
+
+        if plot_dict['evaluation'] == 'YES':
+            if current_column == 0 and current_row == 0:
+                axis.set_ylim(-0.5, 0.5)
+            else:
+                axis.set_ylim(0, 1)
+
         # axis.fill_between(y_FQ,
         #                   y_TQ,
         #                   alpha=0.3,
@@ -305,63 +391,8 @@ def my_plot(base_save_path, utility, accuracy, DP, EOP):
 
         # c = 0 < 1
 
-        if current_column == 0 and current_row ==0:
-            current_column =1
-        elif current_column == 1 and current_row ==0:
-            current_row =1
-            current_column=0
-        else:
-            current_column = 1
-            current_row = 1
-
-
-    file_path = "{}plot.png".format(base_save_path)
-
-    plt.savefig(file_path)
-    tpl.save(file_path.replace(".png", ".tex"),
-             figure=figure,
-             axis_width='\\figwidth',
-             axis_height='\\figheight',
-             tex_relative_path_to_data='.',
-             extra_groupstyle_parameters={"horizontal sep=1.2cm"},
-             extra_axis_parameters={
-                 "scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
-    plt.close('all')
-
-def my_plot2(base_save_path, A1, A2, B1, B2):
-
-    x_label = "time steps"
-    measure_dict = {'per round regret': A1, 'cum regret': A2, 'per round regret (non-zero)':B1, "cum regret (non-zero)" : B2}
-
-    num_columns = 2
-    num_rows = 2
-
-    figure = plt.figure(constrained_layout=True)
-    grid = GridSpec(nrows=num_rows, ncols=num_columns, figure=figure)
-
-
-    current_row = 0
-    current_column = 0
-
-    for key, value in measure_dict.items():
-
-        axis = figure.add_subplot(grid[current_row, current_column])
-        axis.plot(value)
-        axis.set_xlabel(x_label)
-        axis.title.set_text(key)
-        axis.set_xscale("linear")
-
-        if current_column ==1:
-            axis.axis('square')
-
-        #
-        # axis.fill_between(y_FQ,
-        #                   y_TQ,
-        #                   alpha=0.3,
-        #                   edgecolor='#060080',
-        #                   facecolor='#928CFF')
-
-        # c = 0 < 1
+        # if plot_dict['evaluation'] == 'YES':
+        #     axis.set_ylim([-1,1])
 
         if current_column == 0 and current_row ==0:
             current_column =1
@@ -375,16 +406,16 @@ def my_plot2(base_save_path, A1, A2, B1, B2):
     # Todo: new inserted
 
 
-    file_path = "{}regret.png".format(base_save_path)
+    file_path = "{}plot.png".format(base_save_path)
     plt.savefig(file_path)
     tpl.save(file_path.replace(".png", ".tex"),
              figure=figure,
              axis_width='\\figwidth',
              axis_height='\\figheight',
              tex_relative_path_to_data='.',
-             extra_groupstyle_parameters={"horizontal sep=1.2cm"},
-             extra_axis_parameters={
-                 "scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
+             extra_groupstyle_parameters={"horizontal sep=1.2cm"})
+             # ,extra_axis_parameters={
+             #     "scaled y ticks = false, \n yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3}"})
     plt.close('all')
 
 def save_and_plot_results(base_save_path, statistics, update_iterations):

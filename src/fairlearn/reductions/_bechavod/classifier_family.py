@@ -56,7 +56,7 @@ class SensitiveFlip(ClassifierH):
     def get_name(self):
         return self.name
     def predict(self, X):
-        dec = pd.concat([X.loc[:,'sensitive_features_X']==0], axis=0).astype(int).values
+        dec = pd.concat([X.loc[:,'sensitive_features']==0], axis=0).astype(int).values
         # print('SensitiveFlip dec', dec)
         return dec
 
@@ -67,7 +67,7 @@ class SensitiveEqual(ClassifierH):
 
     def predict(self, XA):
         # deleted .to_list()
-        dec = XA.loc[:,'sensitive_features_X'].values
+        dec = XA.loc[:,'sensitive_features'].values
         # print('SensitiveEqual dec', dec)
         return dec
 
