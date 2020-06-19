@@ -131,9 +131,9 @@ def _build_submit_file(args, base_path):
                                                 #                                        if args.queue_num is not None else ""))
                                                 # else:
 
-                                                file.write("arguments = {}\n".format(command))
-                                                file.write("queue {}\n".format(args.queue_num
-                                                                                   if args.queue_num is not None else ""))
+                                                    file.write("arguments = {}\n".format(command))
+                                                    file.write("queue {}\n".format(args.queue_num
+                                                                                       if args.queue_num is not None else ""))
 
                     print("## Finished building {} ##".format(sub_file_name))
 
