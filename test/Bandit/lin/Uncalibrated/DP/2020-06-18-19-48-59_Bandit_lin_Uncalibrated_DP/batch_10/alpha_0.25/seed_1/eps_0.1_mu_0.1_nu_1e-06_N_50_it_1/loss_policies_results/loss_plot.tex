@@ -1,0 +1,108 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={util},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={test set},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.1075, ymax=0.0575,
+ytick style={color=black},
+ytick={-0.15,-0.1,-0.05,0,0.05,0.1},
+yticklabels={−0.15,−0.10,−0.05,0.00,0.05,0.10}
+]
+\addplot [semithick, color0]
+table {%
+0 -0.1
+1 0
+2 0.05
+3 -0.1
+4 -0.1
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={acc},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={test set},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.385, ymax=0.715,
+ytick style={color=black},
+ytick={0.3,0.4,0.5,0.6,0.7,0.8},
+yticklabels={0.3,0.4,0.5,0.6,0.7,0.8}
+]
+\addplot [semithick, color0]
+table {%
+0 0.4
+1 0.6
+2 0.7
+3 0.4
+4 0.4
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={DP},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={test set},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.00952380952380952, ymax=0.2,
+ytick style={color=black},
+ytick={-0.05,0,0.05,0.1,0.15,0.2},
+yticklabels={−0.05,0.00,0.05,0.10,0.15,0.20}
+]
+\addplot [semithick, color0]
+table {%
+0 0
+1 0
+2 0.142857142857143
+3 0.19047619047619
+4 0
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={EOP},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={test set},
+xmin=-0.2, xmax=4.2,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.0166666666666667, ymax=0.35,
+ytick style={color=black},
+ytick={-0.1,0,0.1,0.2,0.3,0.4},
+yticklabels={−0.1,0.0,0.1,0.2,0.3,0.4}
+]
+\addplot [semithick, color0]
+table {%
+0 0
+1 0
+2 0.333333333333333
+3 0.333333333333333
+4 0
+};
+\end{groupplot}
+
+\end{tikzpicture}

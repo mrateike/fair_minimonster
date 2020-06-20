@@ -111,6 +111,7 @@ def utility(y_true, y_pred, sample_weight=None):
 
     c = 0.5
     utility = y_pred.multiply(y_true) - y_pred.multiply(c)
+
     return utility.mean()
 
 

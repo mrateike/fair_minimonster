@@ -1,0 +1,152 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={per round regret},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.75, xmax=15.75,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-1.1, ymax=1.1,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+0 1
+1 1
+2 1
+3 -1
+4 -1
+5 1
+6 1
+7 1
+8 -1
+9 -0.0555555555555556
+10 1
+11 -0.171069332599382
+12 1
+13 -0.23949597132799
+14 -0.224615566204696
+15 -0.318987070444238
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={cum regret},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.75, xmax=15.75,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.811331244407747, ymax=17.3113312444077,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+0 1
+1 2
+2 3
+3 2
+4 1
+5 2
+6 3
+7 4
+8 3
+9 2.94444444444444
+10 3.94444444444444
+11 3.77337511184506
+12 4.77337511184506
+13 4.53387914051707
+14 4.30926357431238
+15 3.99027650386814
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={per round regret (non-zero)},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.75, xmax=15.75,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.05, ymax=1.05,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+0 1
+1 1
+2 1
+3 0
+4 0
+5 1
+6 1
+7 1
+8 0
+9 0
+10 1
+11 0
+12 1
+13 0
+14 0
+15 0
+};
+
+\nextgroupplot[
+height=\figheight,
+scaled y ticks = false, 
+ yticklabel style = {/pgf/number format/fixed, /pgf/number format/precision=3},
+tick align=outside,
+tick pos=left,
+title={cum regret (non-zero)},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={time steps},
+xmin=-0.75, xmax=15.75,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.65, ymax=17.15,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+0 1
+1 2
+2 3
+3 3
+4 3
+5 4
+6 5
+7 6
+8 6
+9 6
+10 7
+11 7
+12 8
+13 8
+14 8
+15 8
+};
+\end{groupplot}
+
+\end{tikzpicture}

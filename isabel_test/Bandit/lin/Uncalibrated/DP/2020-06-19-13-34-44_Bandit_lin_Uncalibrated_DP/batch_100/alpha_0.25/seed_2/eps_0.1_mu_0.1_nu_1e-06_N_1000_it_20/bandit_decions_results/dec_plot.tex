@@ -1,0 +1,128 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={util},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-13, xmax=977,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.5, ymax=0.5,
+ytick style={color=black},
+ytick={-0.6,-0.4,-0.2,0,0.2,0.4,0.6},
+yticklabels={−0.6,−0.4,−0.2,0.0,0.2,0.4,0.6}
+]
+\addplot [semithick, color0]
+table {%
+32 -0.0425
+132 -0.0175
+232 0.01
+332 0.0225
+432 0.0225
+532 0.0225
+632 0.0325
+732 0.0275
+832 0.0475
+932 0.03
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={acc},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-13, xmax=977,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0, ymax=1,
+ytick style={color=black},
+ytick={0,0.2,0.4,0.6,0.8,1},
+yticklabels={0.0,0.2,0.4,0.6,0.8,1.0}
+]
+\addplot [semithick, color0]
+table {%
+32 0.62
+132 0.67
+232 0.725
+332 0.75
+432 0.75
+532 0.75
+632 0.77
+732 0.76
+832 0.8
+932 0.765
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={DP},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-13, xmax=977,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0, ymax=1,
+ytick style={color=black},
+ytick={0,0.2,0.4,0.6,0.8,1},
+yticklabels={0.0,0.2,0.4,0.6,0.8,1.0}
+]
+\addplot [semithick, color0]
+table {%
+32 0.0416666666666667
+132 0.0544871794871795
+232 0.00801282051282054
+332 0.12900641025641
+432 0.0560897435897436
+532 0.193108974358974
+632 0.163461538461538
+732 0.129807692307692
+832 0.0697115384615384
+932 0.162660256410256
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={EOP},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-13, xmax=977,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0, ymax=1,
+ytick style={color=black},
+ytick={0,0.2,0.4,0.6,0.8,1},
+yticklabels={0.0,0.2,0.4,0.6,0.8,1.0}
+]
+\addplot [semithick, color0]
+table {%
+32 0.0392857142857143
+132 0.117857142857143
+232 0.0761904761904763
+332 0.113095238095238
+432 0.00357142857142856
+532 0.110714285714286
+632 0.229761904761905
+732 0.113095238095238
+832 0.0535714285714286
+932 0.308333333333333
+};
+\end{groupplot}
+
+\end{tikzpicture}

@@ -69,17 +69,17 @@ class Evaluation(object):
         test_path = "{}test_data.json".format(path)
         save_dictionary(test_data, test_path)
 
-    def evaluate(self, pi):
+    def evaluate(self, pi, x_axis):
 
         dec, _ = pi.predict(self.XA_test)
         scores = pd.Series(dec, name="scores_expgrad_XA")
 
         results_dict = self.get_stats(self.y_test, scores, self.a_test)
-        self.save_stats(results_dict, scores)
+        self.save_stats(results_dict, scores, x_axis)
 
-    def evaluate_scores(self, scores):
+    def evaluate_scores(self, scores, x_axis):
         results_dict = self.get_stats(self.y_test, scores, self.a_test)
-        self.save_stats(results_dict, scores)
+        self.save_stats(results_dict, scores, x_axis)
 
 
     def get_stats(self, y_test, scores, A_test):
@@ -131,7 +131,7 @@ class Evaluation(object):
 
 
 
-    def save_stats(self, results_dict, scores):
+    def save_stats(self, results_dict, scores, x_axis):
 
         acc = results_dict['ACC']
         mean_pred = results_dict['MEAN_PRED']
@@ -186,8 +186,8 @@ class Evaluation(object):
 
         # ---- plot four measures over iterations -----
         plot_dict = {}
-        plot_dict['x_axis'] = range(0,len(util))
-        plot_dict['x_label'] = 'test set'
+        plot_dict['x_axis_test'] = x_axis
+        plot_dict['x_label'] = 'individuals'
         plot_dict['y_label0'] = 'util'
         plot_dict['y_label1'] = 'acc'
         plot_dict['y_label2'] = 'DP'
@@ -367,7 +367,8 @@ def my_plot(base_save_path, plot_dict, A1, A2, B1, B2):
                 x = plot_dict['x_axis_reg']
             axis.plot(x, value)
         else:
-            axis.plot(value)
+            x = plot_dict['x_axis_test']
+            axis.plot(x, value)
 
         axis.set_xlabel(x_label)
         axis.title.set_text(key)

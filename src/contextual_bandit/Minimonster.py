@@ -46,8 +46,8 @@ class MiniMonster(object):
         self.process_path = "{}/bandit_process_results".format(path)
         Path(self.process_path).mkdir(parents=True, exist_ok=True)
 
-        self.regret_path = "{}/bandit_regret_results".format(path)
-        Path(self.regret_path).mkdir(parents=True, exist_ok=True)
+        # self.regret_path = "{}/bandit_regret_results".format(path)
+        # Path(self.regret_path).mkdir(parents=True, exist_ok=True)
 
         self.statistics_loss = Evaluation(TT, test_seed, loss_path, B)
         self.statistics_var = Evaluation(TT, test_seed, var_path, B)
@@ -141,7 +141,7 @@ class MiniMonster(object):
 
         history = dataset.iloc[:T1]
         print('history', history)
-        print('history.loc[:,l1]', history.loc[:,'l1'].tolist())
+
 
         #----IPS & non IPS Regret
         self.real_loss.extend(history.loc[:,'l1'].tolist())
@@ -152,6 +152,7 @@ class MiniMonster(object):
 
         m = 0
         t = 0
+        self.x_axis = [T1]
         while t <= T2:
 
             if m == 0:
@@ -161,6 +162,8 @@ class MiniMonster(object):
 
             if t == T2:
                 break
+
+
 
             print('time t ', t)
             print('batch m ', m)
@@ -207,16 +210,24 @@ class MiniMonster(object):
             dataset_update = pd.concat([individual.loc[:,['features', 'sensitive_features', 'label']],ips_loss], axis =1)
             history = pd.concat([history, dataset_update], axis = 0, ignore_index=True)
 
+
+            if m == len(training_points):
+                self.x_axis.append(T)
+            else:
+                self.x_axis.append((training_points[m] + T1))
+
+
+
             m += 1
 
         # --- end of fit -------
-        cum_loop_time = np.cumsum(self.loop_time_list)
-        cum_varOracle_time = np.cumsum(self.varOracle_time_list)
+        cum_loop_time = np.cumsum(self.loop_time_list).tolist()
+        cum_varOracle_time = np.cumsum(self.varOracle_time_list).tolist()
         # cum_lossOracle_time = np.cumsum(self.lossOracle_time_list)
 
         process_data = {}
-        process_data['cum-loop-time'] = cum_loop_time.tolist()
-        process_data['cum-varOracle-time'] = cum_varOracle_time.tolist()
+        process_data['cum-loop-time'] = cum_loop_time
+        process_data['cum-varOracle-time'] = cum_varOracle_time
         # print('loop_time_list', loop_time_list)
         # process_data['list-loop-time'] = self.loop_time_list
         # process_data['cum-lossOracle-time'] = cum_lossOracle_time.tolist()
@@ -293,24 +304,23 @@ class MiniMonster(object):
         plot_dict['x_axis_reg'] = timesteps
         plot_dict['x_label'] = 'individuals'
         plot_dict['y_label0'] = 'update-Q time / update'
-        plot_dict['y_label1'] = 'process Reg_t0'
+        plot_dict['y_label1'] = 'process IPS Reg_t0'
         plot_dict['y_label2'] = 'in loop: cum varOracle_time / update'
-        plot_dict['y_label3'] = 'hindsight Reg_T0'
+        plot_dict['y_label3'] = 'hindsight IPS Reg_T0'
         plot_dict['square'] = 'NO'
         plot_dict['process'] = 'YES'
         plot_dict['evaluation'] = 'NO'
         process_path = "{}/process_".format(self.process_path)
 
-        print('reg', reg)
-        my_plot(process_path, plot_dict, self.loop_time_list, \
-                reg, self.varOracle_time_list, regT)
+        my_plot(process_path, plot_dict, cum_loop_time, \
+                reg, cum_varOracle_time, regT)
 
 
         reg0_dict = {}
         reg0_dict['regt0_cum'] = reg.tolist()
         reg0_dict['regT0_cum'] = regT.tolist()
 
-        regret_path = "{}/0regret.json".format(self.regret_path)
+        regret_path = "{}/0regret.json".format(self.process_path)
         save_dictionary(reg0_dict, regret_path)
 
 
@@ -340,15 +350,12 @@ class MiniMonster(object):
         # self.best_loss_t.extend(df.lookup(df.index, batch_best_decisions).tolist())
         # --- non IPS regret
         y = batch.loc[:, 'label']
-        # print('y', y)
-        # print('batch_best_decisions', batch_best_decisions)
         l = self.B.get_loss(batch_best_decisions, y)
-        # print('l', l)
         self.best_loss_t.extend(l.lookup(l.index, batch_best_decisions).tolist())
 
 
         print('--- EVALUATION -- batch update ', m, 'best_policy')
-        self.statistics_loss.evaluate(best_pi.model)
+        self.statistics_loss.evaluate(best_pi.model, self.x_axis)
 
         start = time.time()
         Q = self._solve_op(history, T1, m, best_pi, psi)
@@ -356,7 +363,7 @@ class MiniMonster(object):
         loop_time = np.array([stop - start])
         self.num_update_Q +=1
         self.loop_time_list.append(loop_time[0])
-        # print('Q  ', Q)
+
 
         return Q, best_pi
 
@@ -364,8 +371,6 @@ class MiniMonster(object):
         # xa = pd.DataFrame
         # Q = [Policy,float]
         # best_pi = Policy
-
-        # print('sample xa, Q, best_pi, m,', xa, Q, best_pi, m)
 
         pdec = np.zeros((xa.shape[0], 2))
 
@@ -406,7 +411,7 @@ class MiniMonster(object):
 
         scores_test = pd.Series(dect)
         print('--- EVALUATION -- learners decision making')
-        statistics.evaluate_scores(scores_test)
+        statistics.evaluate_scores(scores_test, self.x_axis)
 
         return dec, pdec
 
@@ -466,8 +471,11 @@ class MiniMonster(object):
             for item in Q:
                 pi = item[0]
                 w = item[1]
-                p1 = predictions[pi].iloc[:,1].to_numpy()
+                prob_dec = predictions[pi].iloc[:,1].to_numpy()
+                dec = predictions[pi].iloc[:,0].to_numpy()
+                p1 = (dec)*(prob_dec) + (1-dec)*(1-prob_dec)
                 p0 = 1-p1
+                print('p1', p1)
                 p = np.stack((p0, p1), axis=1)
                 q = np.add(q, w * p)
 
@@ -477,11 +485,14 @@ class MiniMonster(object):
             s = 1.0 / (t * (q ** 2))
 
             loss = H.loc[:,['l0', 'l1']].to_numpy()
-            # reg = loss - leader_loss
-            # reg[reg < 0] = 0
-            # bt = reg / (t * psi * mu)
 
-            bt = loss
+            # -bt:
+            reg = loss - leader_loss
+            reg[reg < 0] = 0
+            bt = reg / (t * psi * mu)
+
+            # -l:
+            # bt = loss
 
             _H = H.loc[:, ['features', 'sensitive_features', 'label']]
 
@@ -493,8 +504,8 @@ class MiniMonster(object):
 
             Dpimin_dataset1 = Dpimin_dataset.iloc[0:T1,:]
             Dpimin_dataset2 = Dpimin_dataset.iloc[T1:,:].drop(columns=['label'])
-            # print('Dpimin_dataset1', Dpimin_dataset1)
-            # print('Dpimin_dataset2', Dpimin_dataset2)
+            print('Dpimin_dataset1', Dpimin_dataset1)
+            print('Dpimin_dataset2', Dpimin_dataset2)
 
             start = time.time()
             pi = Argmin.argmin(self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
@@ -508,8 +519,12 @@ class MiniMonster(object):
 
             assert pi in predictions.keys(), "Uncached predictions for new policy pi"
 
+
             Dpi, _ = self.get_cum_loss(Dpinormal_dataset, pi, predictions)
-            Dpi = Dpi - ( 4 + leader_loss)
+
+            # -bt:
+            Dpi = Dpi - 4
+            # l: Dpi = Dpi - ( 4 + leader_loss)
 
             if Dpi > 0:
                 loss3 = pd.DataFrame(v, columns=['l0', 'l1'], index=H.index)

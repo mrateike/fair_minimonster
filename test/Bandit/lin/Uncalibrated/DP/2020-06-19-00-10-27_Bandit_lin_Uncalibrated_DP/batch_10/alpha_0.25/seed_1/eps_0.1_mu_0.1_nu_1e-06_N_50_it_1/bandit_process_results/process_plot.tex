@@ -1,0 +1,176 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={update-Q time / update},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=4.3, xmax=41.7,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.449083614349365, ymax=0.760632228851318,
+ytick style={color=black},
+ytick={0.4,0.5,0.6,0.7,0.8},
+yticklabels={0.4,0.5,0.6,0.7,0.8}
+]
+\addplot [semithick, color0]
+table {%
+6 0.746470928192139
+16 0.550005197525024
+26 0.731855869293213
+36 0.50883674621582
+40 0.463244915008545
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={process Reg\_t0},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=0.75, xmax=6.25,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.0275, ymax=0.5775,
+ytick style={color=black},
+ytick={-0.2,0,0.2,0.4,0.6},
+yticklabels={−0.2,0.0,0.2,0.4,0.6}
+]
+\addplot [semithick, color0]
+table {%
+1 0
+2 0
+3 0
+4 0
+5 0.216666666666667
+6 0.55
+7 nan
+8 nan
+9 nan
+10 nan
+11 nan
+12 nan
+13 nan
+14 nan
+15 nan
+16 nan
+17 nan
+18 nan
+19 nan
+20 nan
+21 nan
+22 nan
+23 nan
+24 nan
+25 nan
+26 nan
+27 nan
+28 nan
+29 nan
+30 nan
+31 nan
+32 nan
+33 nan
+34 nan
+35 nan
+36 nan
+37 nan
+38 nan
+39 nan
+40 nan
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={in loop: cum varOracle\_time / update},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=4.3, xmax=41.7,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.435377788543701, ymax=0.745076942443848,
+ytick style={color=black},
+ytick={0.4,0.5,0.6,0.7,0.8},
+yticklabels={0.4,0.5,0.6,0.7,0.8}
+]
+\addplot [semithick, color0]
+table {%
+6 0.730999708175659
+16 0.532466888427734
+26 0.719506978988647
+36 0.492594957351685
+40 0.44945502281189
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={hindsight Reg\_T0},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-0.95, xmax=41.95,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=-0.586026125866709, ymax=12.3065486432009,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+1 0
+2 0.5
+3 0.833333333333333
+4 1.08333333333333
+5 1.28333333333333
+6 1.61666666666667
+7 1.97380952380952
+8 2.34880952380952
+9 2.73769841269841
+10 3.13769841269841
+11 3.54678932178932
+12 3.91715969215969
+13 4.29750157250157
+14 4.64670792170792
+15 4.96893014393014
+16 5.30226347726348
+17 5.60945301974714
+18 5.95513203209282
+19 6.2767694589934
+20 6.58232501454896
+21 6.86803930026324
+22 7.14076657299051
+23 7.42337526864269
+24 7.69420860197602
+25 7.94976415753158
+26 8.19549065325807
+27 8.43005855449264
+28 8.67410617354026
+29 8.90782264863605
+30 9.15041524122864
+31 9.3833901516229
+32 9.62470959606735
+33 9.8738678452256
+34 10.130403792938
+35 10.3938958564301
+36 10.6485254860597
+37 10.8939896074148
+38 11.1593099361027
+39 11.4434682050807
+40 11.7205225173342
+};
+\end{groupplot}
+
+\end{tikzpicture}

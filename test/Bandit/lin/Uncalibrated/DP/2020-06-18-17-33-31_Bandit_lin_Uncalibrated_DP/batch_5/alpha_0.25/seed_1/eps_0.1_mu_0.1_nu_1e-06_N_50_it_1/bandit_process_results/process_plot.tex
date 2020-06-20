@@ -1,0 +1,98 @@
+% This file was created by tikzplotlib v0.9.2.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+
+\begin{groupplot}[group style={group size=2 by 2, horizontal sep=1.2cm}]
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={cum update-Q time},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=4.5, xmax=37.5,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.533497965335846, ymax=0.963224017620087,
+ytick style={color=black}
+]
+\addplot [semithick, color0]
+table {%
+6 0.729214906692505
+11 0.553030967712402
+16 0.685562133789062
+21 0.869458913803101
+26 0.660794973373413
+31 0.94369101524353
+36 0.723169088363647
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={process Reg\_t0},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-0.055, xmax=0.055,
+xtick style={color=black},
+xtick={-0.1,-0.05,0,0.05,0.1},
+xticklabels={−0.10,−0.05,0.00,0.05,0.10},
+y grid style={white!69.0196078431373!black},
+ymin=-0.055, ymax=0.055,
+ytick style={color=black},
+ytick={-0.075,-0.05,-0.025,0,0.025,0.05,0.075},
+yticklabels={−0.075,−0.050,−0.025,0.000,0.025,0.050,0.075}
+]
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={in loop: varOracle\_time},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=4.5, xmax=37.5,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ymin=0.432468664646149, ymax=0.782014358043671,
+ytick style={color=black},
+ytick={0.4,0.5,0.6,0.7,0.8},
+yticklabels={0.4,0.5,0.6,0.7,0.8}
+]
+\addplot [semithick, color0]
+table {%
+6 0.687628984451294
+11 0.47735595703125
+16 0.58144998550415
+21 0.749526977539062
+26 0.505314826965332
+31 0.766125917434692
+36 0.448357105255127
+};
+
+\nextgroupplot[
+height=\figheight,
+tick align=outside,
+tick pos=left,
+title={hindsight Reg\_T0},
+width=\figwidth,
+x grid style={white!69.0196078431373!black},
+xlabel={individuals},
+xmin=-0.055, xmax=0.055,
+xtick style={color=black},
+xtick={-0.1,-0.05,0,0.05,0.1},
+xticklabels={−0.10,−0.05,0.00,0.05,0.10},
+y grid style={white!69.0196078431373!black},
+ymin=-0.055, ymax=0.055,
+ytick style={color=black},
+ytick={-0.075,-0.05,-0.025,0,0.025,0.05,0.075},
+yticklabels={−0.075,−0.050,−0.025,0.000,0.025,0.050,0.075}
+]
+\end{groupplot}
+
+\end{tikzpicture}
