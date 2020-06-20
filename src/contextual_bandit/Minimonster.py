@@ -49,9 +49,10 @@ class MiniMonster(object):
         # self.regret_path = "{}/bandit_regret_results".format(path)
         # Path(self.regret_path).mkdir(parents=True, exist_ok=True)
 
-        self.statistics_loss = Evaluation(TT, test_seed, loss_path, B)
-        self.statistics_var = Evaluation(TT, test_seed, var_path, B)
-        self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B)
+        # self.statistics_loss = Evaluation(TT, test_seed, loss_path, B, x_label)
+        # self.statistics_var = Evaluation(TT, test_seed, var_path, B, x_label)
+        x_label = 'individuals'
+        self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B, x_label)
         self.varOracle_time_list = []
         self.num_varOracle_calls = 0
         self.num_lossOracle_calls = 0

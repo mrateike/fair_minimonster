@@ -92,13 +92,13 @@ def _build_submit_file(args, base_path):
                                 seed_path = "{}/seed_{}".format(alpha_path, s)
                                 Path(seed_path).mkdir(parents=True, exist_ok=True)
 
-                                for N in args.total_data:
+                                for T in args.total_data:
                                     for eps in args.eps:
                                         for mu in args.mu:
                                             for nu in args.nu:
                                                 for i in args.iterations:
                                                     command = "exp/run.py " \
-                                                              "-N {} " \
+                                                              "-T {} " \
                                                               "-a {} " \
                                                               "-s {} " \
                                                               "-f {} " \
@@ -110,7 +110,7 @@ def _build_submit_file(args, base_path):
                                                               "-d {} " \
                                                               "-i {} " \
                                                               "-p {} " \
-                                                              "{} ".format(N,
+                                                              "{} ".format(T,
                                                                           a,
                                                                           s,
                                                                           f,
@@ -187,14 +187,14 @@ def _multi_run(args, base_path):
                             seed_path = "{}/seed_{}".format(alpha_path, s)
                             Path(seed_path).mkdir(parents=True, exist_ok=True)
 
-                            for N in args.total_data:
+                            for T in args.total_data:
                                 for eps in args.eps:
                                     for mu in args.mu:
                                         for nu in args.nu:
                                             for i in args.iterations:
 
                                                 command = ["python3", "exp/run.py",
-                                                           "-N", str(N),
+                                                           "-T", str(T),
                                                            "-a", str(a),
                                                            "-s", str(s),
                                                            "-f", str(f),
@@ -219,7 +219,7 @@ if __name__ == "__main__":
 
 
     # Policy training parameters
-    parser.add_argument('-N', '--total_data', nargs='+', type=int, required=True,
+    parser.add_argument('-T', '--total_data', nargs='+', type=int, required=True,
                         help='list of total data s to be used')
     parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
                         help='phase 1 phase 2 data split parameter')

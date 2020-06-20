@@ -13,7 +13,7 @@ from pathlib import Path
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-N', '--total_data', type=int, nargs='+', required=True,
+    parser.add_argument('-T', '--total_data', type=int, nargs='+', required=True,
                         help='list of total data s to be used')
     parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
                         help='phase 1 phase 2 data split parameter')
@@ -57,9 +57,9 @@ if __name__ == "__main__":
     base_save_path = "{}/{}_{}_{}_{}_{}".format(base_save_path, eps, mu, nu, N, i)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
-    T = args.total_data[0]
+    T = 5071
     # training data
-    TT = 200
+    TT = 5000
     # testing data
     # TT = N - T
     # phase 1 phase 2 data

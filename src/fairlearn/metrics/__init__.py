@@ -58,8 +58,7 @@ _extra_metrics = [
     "_mean_overprediction",
     "_mean_underprediction",
     "test_statistics",
-    "utility",
-    "accuracy2_score"
+    "utility"
 ]
 
 

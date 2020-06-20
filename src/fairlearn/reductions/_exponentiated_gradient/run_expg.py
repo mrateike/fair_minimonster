@@ -150,7 +150,8 @@ def play (dataset1, dataset2, fairness, eps, nu, statistics, p):
 
     A2_train = dataset2.loc[:, 'sensitive_features']
     l_IPS = dataset2.filter(items=['l0', 'l1'])
-    XA2_train = dataset2.filter(items=['features', 'sensitive_features_X'])
+    XA2_train = dataset2.filter(items=['features', 'sensitive_features'])
+
 
     expgrad_XA = ExponentiatedGradient(
         dataset1,

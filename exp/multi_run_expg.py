@@ -110,12 +110,12 @@ def _build_submit_file(args, base_path):
                         base_save_path_seed = "{}/seed_{}".format(alpha_path, s)
                         Path(base_save_path_seed).mkdir(parents=True, exist_ok=True)
 
-                        for N in args.total_data:
+                        for T in args.total_data:
                             for mu in args.mu:
                                 for nu in args.nu:
                                     for eps in args.eps:
                                             command = "exp/main_expg.py " \
-                                                          "-N {} " \
+                                                          "-T {} " \
                                                           "-a {} " \
                                                           "-s {} " \
                                                           "-i {} " \
@@ -125,7 +125,7 @@ def _build_submit_file(args, base_path):
                                                           "-mu {} " \
                                                           "-d {} " \
                                                           "-p {} " \
-                                                          "{} ".format(N,
+                                                          "{} ".format(T,
                                                                       a,
                                                                       s,
                                                                       args.iterations,
@@ -183,13 +183,13 @@ def _multi_run(args, base_path):
                     seed_path = "{}/seed_{}".format(alpha_path, s)
                     Path(seed_path).mkdir(parents=True, exist_ok=True)
 
-                    for N in args.total_data:
+                    for T in args.total_data:
                         for mu in args.mu:
                             for nu in args.nu:
                                 for eps in args.eps:
 
                                     command = ["python3", "exp/main_expg.py",
-                                               "-N", str(N),
+                                               "-T", str(T),
                                                "-a", str(a),
                                                "-s", str(s),
                                                "-i", str(args.iterations),
@@ -212,7 +212,7 @@ if __name__ == "__main__":
 
 
     # Policy training parameters
-    parser.add_argument('-N', '--total_data', type=int, nargs='+', required=True,
+    parser.add_argument('-T', '--total_data', type=int, nargs='+', required=True,
                         help='list of toatl data s to be used')
     parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
                         help='phase 1 phase 2 data split parameter')

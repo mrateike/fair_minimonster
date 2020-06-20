@@ -1,8 +1,9 @@
 .results
 .idea
 .save
-.test
-.isabel_test
+**/test
+**/isabel_test
+**/results
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
