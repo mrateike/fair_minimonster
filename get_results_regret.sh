@@ -14,9 +14,17 @@ if [ -e "$1" ]; then
 	fi
 fi
 
-echo "data;fair;alpha;seed;regt;regT;xaxis" > "$1"
+echo "batch;bsize;data;fair;alpha;beta;seed;regt;regT" > "$1"
 
 for file in $(find "$2" -name "*regret.json*"); do
+
+	# batch (none, lin, exp)
+	echo "$file" | cut -d "_" -f3 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# batchsize
+	echo "$file" | cut -d "_" -f6 |  cut -d "/" -f1 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
 
 	# dataset
 	echo "$file" | cut -d "_" -f4 | cut -d "/" -f1 | tr -d "\n" >> "$1"
@@ -28,6 +36,10 @@ for file in $(find "$2" -name "*regret.json*"); do
 
 	# alpha
 	echo "$file" | cut -d "_" -f7 | cut -d "/" -f1 | tr -d "\n" >> "$1"
+	echo -n ";" >> "$1"
+
+	# beta
+	echo "$file" | cut -d "_" -f9 | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	# seed

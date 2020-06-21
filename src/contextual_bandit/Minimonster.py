@@ -152,6 +152,10 @@ class MiniMonster(object):
         self.real_loss.extend(history.loc[:,'l1'].tolist())
 
 
+        scores=pd.Series(np.ones(len(self.statistics_decisions.y_test)))
+        self.statistics_decisions.evaluate_scores(scores)
+
+
         # for _solve_Opt
         psi = 4*(math.e -2)*np.log(T)
 
@@ -177,10 +181,7 @@ class MiniMonster(object):
 
             if m < len(training_points):
                 batchpoint = training_points[m]
-                if m ==0:
-                    batchsize = batchpoint
-                else:
-                    batchsize = batchpoint - t
+                batchsize = batchpoint - t
             else:
                 batchsize = T2-t
                 batchpoint = T2
@@ -188,14 +189,14 @@ class MiniMonster(object):
             individual = dataset.iloc[(T1+t):(T1+batchpoint)]
             # print('individual', individual)
 
-            t += batchsize
+            t = batchpoint
 
 
             xa = individual.loc[:,['features', 'sensitive_features']]
 
 
 
-            d, p = self.sample(xa, Q, best_pi, m, self.statistics_decisions)
+            d, p = self.sample(xa, Q, best_pi, m)
             p = pd.DataFrame(p, index=individual.index)
             y = individual.loc[:,'label']
             l = self.B.get_loss(d, y)
@@ -224,6 +225,10 @@ class MiniMonster(object):
 
         # ------- end of fitting -----------
 
+        print('x-axis', self.x_axis)
+        print('ACC', self.statistics_decisions.ACC_list)
+        print('DP', self.statistics_decisions.DP_list)
+        print('TPR', self.statistics_decisions.TPR_list)
         data_decisions = {'ACC': self.statistics_decisions.ACC_list, \
                      'DP': self.statistics_decisions.DP_list, \
                      'TPR': self.statistics_decisions.TPR_list,
@@ -335,18 +340,15 @@ class MiniMonster(object):
         dataset1 = history.loc[:T1-1]
         dataset2 = history.loc[T1:].drop(['label'], axis=1)
 
-        # start = time.time()
         best_pi = Argmin.argmin(self.eps, self.nu, self.fairness, dataset1, dataset2)
-        # stop = time.time()
-        # self.num_lossOracle_calls += 1
-        # pi_loss_time = np.array([stop - start])
-        # self.lossOracle_time_list.append(pi_loss_time[0])
 
         batch = history.iloc[-batch_size:]
-        # print('batch', batch)
+
         batch_xa = batch.loc[:,['features', 'sensitive_features']]
         batch_best_decisions, _ = best_pi.predict(batch_xa)
         batch_best_decisions = pd.Series(batch_best_decisions).astype(int)
+
+
 
 
         # --- IPS regret
@@ -372,14 +374,14 @@ class MiniMonster(object):
 
         return Q, best_pi
 
-    def sample(self, xa, Q, best_pi, m, statistics):
+    def sample(self, xa, Q, best_pi, m):
         # xa = pd.DataFrame
         # Q = [Policy,float]
         # best_pi = Policy
 
         pdec = np.zeros((xa.shape[0], 2))
 
-        xa_test = statistics.XA_test
+        xa_test = self.statistics_decisions.XA_test
         pdt = np.zeros((xa_test.shape[0], 2))
 
 
@@ -419,7 +421,7 @@ class MiniMonster(object):
         # print('--- EVALUATION -- learners decision making')
         # print('scores_test', scores_test)
         # print('self.x_axis', self.x_axis)
-        statistics.evaluate_scores(scores_test)
+        self.statistics_decisions.evaluate_scores(scores_test)
 
         return dec, pdec
 

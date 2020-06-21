@@ -14,7 +14,7 @@ if [ -e "$1" ]; then
 	fi
 fi
 
-echo "batch;bsize;data;fair;alpha;beta;seed;acc;DP;TPR;axis" > "$1"
+echo "batch;bsize;data;fair;alpha;beta;seed;acc;DP;EO;axis" > "$1"
 
 for file in $(find "$2" -name "*evaluation.json*"); do
 
@@ -35,7 +35,7 @@ for file in $(find "$2" -name "*evaluation.json*"); do
 	echo -n ";" >> "$1"
 
 	# alpha
-	echo "$file" | cut -d "_" -f9 | cut -d "/" -f1  | tr -d "\n" >> "$1"
+	echo "$file" | cut -d "_" -f7 | cut -d "/" -f1  | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	# beta
@@ -43,7 +43,7 @@ for file in $(find "$2" -name "*evaluation.json*"); do
 	echo -n ";" >> "$1"
 
 	# seed
-	echo "$file" | cut -d "_" -f6 | cut -d "/" -f1  | tr -d "\n" >> "$1"
+	echo "$file" | cut -d "_" -f8 | cut -d "/" -f1  | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	#
