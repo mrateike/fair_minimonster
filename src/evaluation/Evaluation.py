@@ -43,7 +43,7 @@ class Evaluation(object):
         self.x_label = x_label
         self.DP_list = []
         self.TPR_list = []
-        self.ERR_list = []
+        self.ACC_list = []
         self.UTIL_list = []
 
         self.stats_list = []
@@ -64,11 +64,11 @@ class Evaluation(object):
         scores = pd.Series(dec, name="scores_expgrad_XA")
 
         results_dict = self.get_stats(self.y_test, scores, self.a_test)
-        self.save_stats(results_dict, scores)
+        self.save_stats(results_dict)
 
     def evaluate_scores(self, scores):
         results_dict = self.get_stats(self.y_test, scores, self.a_test)
-        self.save_stats(results_dict, scores)
+        self.save_stats(results_dict)
 
 
     def get_stats(self, y_test, scores, A_test):
@@ -77,22 +77,23 @@ class Evaluation(object):
         UTIL = utility(y_test, scores)
         DP = demographic_parity_difference(y_test, scores, sensitive_features=A_test)
         TPR = true_positive_rate_difference(y_test, scores, sensitive_features=A_test)
-        results_dict = {'ERR': 1-ACC, 'DP': DP, 'TPR': TPR, 'UTIL':UTIL}
+        results_dict = {'ACC': ACC, 'DP': DP, 'TPR': TPR, 'UTIL':UTIL}
 
         return results_dict
 
 
-    def save_stats(self, results_dict, scores):
+    def save_stats(self, results_dict):
 
-        ERR = results_dict['ERR']
+        ACC = results_dict['ACC']
         DP = results_dict['DP']
         TPR = results_dict['TPR']
         UTIL = results_dict['UTIL']
 
-        self.ERR_list.append(ERR)
+        self.ACC_list.append(ACC)
         self.DP_list.append(DP)
         self.TPR_list.append(TPR)
         self.UTIL_list.append(UTIL)
+
 
 
         # self.scores_dict.update({self.i_scores: scores.tolist()})
@@ -104,23 +105,23 @@ class Evaluation(object):
 
 
 def get_mean_statistic(stats):
-    ERR_mean = statistics.mean(stats.ERR_list)
+    ACC_mean = statistics.mean(stats.ACC_list)
     DP_mean = statistics.mean(stats.DP_list)
     TPR_mean = statistics.mean(stats.TPR_list)
 
-    if len(stats.ERR_list) == 1:
-        ERR_std = 0
+    if len(stats.ACC_list) == 1:
+        ACC_std = 0
         DP_std = 0
         TPR_std = 0
     else:
-        ERR_std = statistics.stdev(stats.ERR_list)
+        ACC_std = statistics.stdev(stats.ACC_list)
         DP_std = statistics.stdev(stats.DP_list)
         TPR_std = statistics.stdev(stats.TPR_list)
 
 
-    data_mean = {'ERR_mean': ERR_mean, 'ERR_std': ERR_std, \
+    data_mean = {'ACC_mean': ACC_mean, 'ACC_std': ACC_std, \
                  'DP_mean': DP_mean, 'DP_std': DP_std, \
-                 'TPR_mean': TPR_mean, 'TPR_std': TPR_std, 'num_policies': len(stats.ERR_list)}
+                 'TPR_mean': TPR_mean, 'TPR_std': TPR_std, 'num_policies': len(stats.ACC_list)}
 
     parameter_save_path = "{}evaluation.json".format(stats.path)
     save_dictionary(data_mean, parameter_save_path)
@@ -142,16 +143,12 @@ def get_mean_statistic(stats):
 
 def get_average_regret(regret_dict):
 
-    regt = regret_dict[list(regret_dict.keys())[0]]
+
     regt_cum = regret_dict[list(regret_dict.keys())[1]]
-    regT = regret_dict[list(regret_dict.keys())[2]]
     regT_cum = regret_dict[list(regret_dict.keys())[3]]
 
     RT = regT_cum[-1]
-    regt_av_dict = save_mean_std_quantiles(regt)
-    regt_cum_av_dict = save_mean_std_quantiles(regt_cum)
-    regT_av_dict = save_mean_std_quantiles(regT)
-    regT_cum_av_dict = save_mean_std_quantiles(regT_cum)
+
 
     av_reg_dict = {'RT': RT, 'regt': regt_av_dict, 'regt_cum': regt_cum_av_dict, 'regT': regT_av_dict, 'regT_cum': regT_cum_av_dict}
     return av_reg_dict

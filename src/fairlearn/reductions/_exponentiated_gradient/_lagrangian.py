@@ -195,9 +195,11 @@ class _Lagrangian:
         # Origignal was imposing n as a parameter for reweighting?
 
         if redW.sum() == 0:
+            a=1
+            # print('')
             # print('lambda_vec', lambda_vec)
             # print('signed_weights', signed_weights)
-            print('ERROR Lagrangian division by zero')
+            # print('ERROR Lagrangian division by zero')
         else:
             redW = redY.shape[0] * redW / redW.sum()
         # print('call oracle: redY.shape[0]', redY.shape[0])

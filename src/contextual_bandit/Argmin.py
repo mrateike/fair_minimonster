@@ -4,7 +4,7 @@ from src.fairlearn.reductions._exponentiated_gradient.exponentiated_gradient imp
 import pandas as pd
 from data.util import save_dictionary
 from src.evaluation.Evaluation import my_plot
-from src.evaluation.Evaluation import Evaluation, save_and_plot_results, my_plot
+from src.evaluation.Evaluation import Evaluation, my_plot
 from src.evaluation.training_evaluation import Statistics
 from data.util import save_dictionary
 from src.evaluation.training_evaluation import UTILITY

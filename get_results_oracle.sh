@@ -14,7 +14,7 @@ if [ -e "$1" ]; then
 	fi
 fi
 
-echo "data;fair;seed;beta;err" > "$1"
+echo "data;fair;seed;beta;acc" > "$1"
 
 for file in $(find "$2" -name "*evaluation.json*"); do
 	

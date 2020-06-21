@@ -50,12 +50,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    T = 5071
-    TT = 5000
+    T = args.total_data[0]
+    TT = args.total_data[0]
     T1 = round(T ** (2 * args.alpha[0]))
     T2 = T - T1
 
-    assert T2 == 5000, 'T2 not 5000'
+
 
     base_save_path = args.path
     eps = "eps_{}".format((args.eps[0]))

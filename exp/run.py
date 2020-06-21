@@ -57,9 +57,9 @@ if __name__ == "__main__":
     base_save_path = "{}/{}_{}_{}_{}_{}".format(base_save_path, eps, mu, nu, N, i)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
 
-    T = 5071
+    T = args.total_data[0]
     # training data
-    TT = 5000
+    TT = T
     # testing data
     # TT = N - T
     # phase 1 phase 2 data

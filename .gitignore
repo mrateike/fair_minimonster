@@ -1,6 +1,8 @@
 .results
 .idea
 .save
+**/final_results
+**/archive
 **/test
 **/isabel_test
 **/results
@@ -13,6 +15,7 @@ __pycache__/
 *.so
 *.csv
 *.sub
+*.ipynb
 
 # Distribution / packaging
 .Python
