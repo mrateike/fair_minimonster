@@ -19,7 +19,7 @@ echo "data;fair;seed;beta;acc" > "$1"
 for file in $(find "$2" -name "*evaluation.json*"); do
 	
 	# dataset (Uncalibrated, FICO)
-	echo "$file" | cut -d "_" -f1 | cut -d "/" -f5 | tr -d "\n" >> "$1"
+	echo "$file" | cut -d "_" -f1 | cut -d "/" -f4 | tr -d "\n" >> "$1"
 	echo -n ";" >> "$1"
 
 	# fairness (DP, EO)
