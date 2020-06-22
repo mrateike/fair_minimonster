@@ -56,7 +56,7 @@ def _build_submit_file(args, base_path):
                     file.write("# Maximum expected execution time for the job, in seconds\n")
                     file.write("# 43200 = 12h\n")
                     file.write("# 86400 = 24h\n")
-                    file.write("MaxTime = 43200\n\n")
+                    file.write("MaxTime = 86400\n\n")
                     file.write("# Kill the jobs without warning\n")
                     file.write("periodic_remove = (JobStatus =?= 2) && ((CurrentTime - JobCurrentStartDate) >= $(MaxTime))\n\n")
                     file.write("# ----------------------------------------------------------------------- #\n")
@@ -253,7 +253,7 @@ if __name__ == "__main__":
     # parser.add_argument('-pp', '--python_path', type=str, required=False, help="path of the python executable")
     parser.add_argument('-q', '--queue_num', type=int, required=False,
                         help="the number of process that should be queued")
-    parser.add_argument('--ram', type=int, required=False, help='the RAM requested (default = 6144)', default=6144)
+    parser.add_argument('--ram', type=int, required=False, help='the RAM requested (default = 9800)', default=9800)
     parser.add_argument('--cpu', type=int, required=False, help='the number of CPUs requested (default = 1)', default=1)
 
     args = parser.parse_args()
