@@ -19,7 +19,7 @@ from data.util import get_list_of_seeds
 def play(T, alpha, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, mu, num_iterations):
 
 
-    seed_test = 45*seed
+    # seed_test = 45*seed
     # seed_train = 17*seed
 
 
@@ -31,12 +31,14 @@ def play(T, alpha, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed,
 
     B = Simulators.DatasetBandit(dataset)
 
+    # randomstate = np.random.RandomState(seed)
     dataset = B.sample_dataset(T, seed)
+    # print('TRAIN DATA', dataset)
     # dataset1 = dataset.iloc[:T1]
     # dataset2 = dataset.iloc[T1:(T1+T2)]
 
 
-    M = MiniMonster(B, fairness, eps, nu, TT, seed_test, path, mu, num_iterations)
+    M = MiniMonster(B, fairness, eps, nu, TT, seed, path, mu, num_iterations)
 
     print("------------- start fit ---------------")
     start = time.time()

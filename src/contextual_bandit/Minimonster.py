@@ -24,13 +24,16 @@ class MiniMonster(object):
     Implementation of MiniMonster with a scikit_learn learning algorithm as the AMO.
     """
 
-    def __init__(self, B, fairness, eps, nu, TT, test_seed, path, mu, num_iterations):
+    def __init__(self, B, fairness, eps, nu, TT, seed, path, mu, num_iterations):
         self.B = B
         # XA, L, A, Y
         # self.dataset1 = dataset1
         # self.dataset2 = dataset2.drop(['l0', 'l1'], axis=1)
         self.num_iterations = num_iterations
 
+
+
+        self.seed = seed
         # loss_path = "{}/loss_policies_results".format(path)
         # Path(loss_path).mkdir(parents=True, exist_ok=True)
         # loss_path = "{}/loss_".format(loss_path)
@@ -55,6 +58,8 @@ class MiniMonster(object):
         x_label = 'individuals'
 
         dec_path = "{}/bandit_".format(path)
+        test_seed = 45*seed
+
         self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B, x_label)
 
         self.varOracle_time_list = []
@@ -103,6 +108,17 @@ class MiniMonster(object):
         print('T', T)
         print('T1', T1)
         print('T2', T2)
+        self.T = T
+        rand = np.random.RandomState(21 * self.seed)
+        self.randomthresholds = rand.rand(T)
+
+        rand1 = np.random.RandomState(27 * self.seed)
+        self.randomthresholds1 = rand1.rand(T)
+        rand2 = np.random.RandomState(29 * self.seed)
+        self.randomthresholds2 = rand2.rand(len(self.statistics_decisions.XA_test))
+
+
+        # print('RAND THRESHOLDS', self.randomthresholds)
 
         # ------------- batch settings
         training_points = []
@@ -162,11 +178,11 @@ class MiniMonster(object):
         m = 0
         t = 0
         self.x_axis = [T1]
-        while t <= T2:
+        while t <= T:
 
             if m == 0:
                 batchsize = 0
-
+            # print('update: m', m, 't', t, 'batchsize', batchsize)
             Q, best_pi = self.update(history, T1, psi, batchsize, m)
 
             if t == T2:
@@ -194,8 +210,7 @@ class MiniMonster(object):
 
             xa = individual.loc[:,['features', 'sensitive_features']]
 
-
-
+            # print('sample: m', m, 't', t, 'xa', xa)
             d, p = self.sample(xa, Q, best_pi, m)
             p = pd.DataFrame(p, index=individual.index)
             y = individual.loc[:,'label']
@@ -340,7 +355,7 @@ class MiniMonster(object):
         dataset1 = history.loc[:T1-1]
         dataset2 = history.loc[T1:].drop(['label'], axis=1)
 
-        best_pi = Argmin.argmin(self.eps, self.nu, self.fairness, dataset1, dataset2)
+        best_pi = Argmin.argmin(self.randomthresholds, self.eps, self.nu, self.fairness, dataset1, dataset2)
 
         batch = history.iloc[-batch_size:]
 
@@ -357,6 +372,7 @@ class MiniMonster(object):
         # self.best_loss_t.extend(df.lookup(df.index, batch_best_decisions).tolist())
         # --- non IPS regret
         y = batch.loc[:, 'label']
+
         l = self.B.get_loss(batch_best_decisions, y)
         self.best_loss_t.extend(l.lookup(l.index, batch_best_decisions).tolist())
 
@@ -382,6 +398,7 @@ class MiniMonster(object):
         pdec = np.zeros((xa.shape[0], 2))
 
         xa_test = self.statistics_decisions.XA_test
+
         pdt = np.zeros((xa_test.shape[0], 2))
 
 
@@ -393,6 +410,7 @@ class MiniMonster(object):
             pdec = np.add(pdec, w * p)
 
             _, pt = pi.predict(xa_test)
+
             pdt = np.add(pdt, w * pt)
 
         ## Mix in leader
@@ -407,14 +425,12 @@ class MiniMonster(object):
         pdt = np.add(pdt, w_bp * pbt)
         pdt = (1 - 2 *  mu) * pdt + mu
 
-        ## Decision making
-        random_threshold = np.random.rand(len(xa))
-        dec = (pdec[:,1] >= random_threshold) * 1
+        threshold1 = self.randomthresholds1[xa.index[0]:xa.index[-1] + 1]
+        dec = (pdec[:,1] >= threshold1) * 1
         dec = dec
 
-
-        random_thresholdt = np.random.rand(len(xa_test))
-        dect = (pdt[:, 1] >= random_thresholdt) * 1
+        threshold2 = self.randomthresholds2[xa_test.index[0]:xa_test.index[-1] + 1]
+        dect = (pdt[:, 1] >= threshold2) * 1
         dect = dect.squeeze()
 
         scores_test = pd.Series(dect)
@@ -514,7 +530,7 @@ class MiniMonster(object):
             # print('Dpimin_dataset2', Dpimin_dataset2)
 
             # start = time.time()
-            pi = Argmin.argmin(self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
+            pi = Argmin.argmin(self.randomthresholds, self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
             # stop = time.time()
             # pi_var_total_time = pi_var_total_time + np.array([stop - start])[0]
             # self.num_varOracle_calls += 1

@@ -46,7 +46,7 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
     :type eta_mul: float
     """
 
-    def __init__(self, dataset1, estimator, constraints, eps, nu, it=50, eta0=2.0):  # noqa: D103
+    def __init__(self, rand_thresh, dataset1, estimator, constraints, eps, nu, it=50, eta0=2.0):  # noqa: D103
         self._estimator = estimator
         self._constraints = constraints
         self._eps = eps
@@ -67,6 +67,10 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
         self._lambda_vecs = pd.DataFrame()
         self._lambda_vecs_LP = pd.DataFrame()
         self._lambda_vecs_lagrangian = pd.DataFrame()
+
+        self.randomthresholds = rand_thresh
+
+
 
     def fit(self, X=None, y=None, **kwargs):
         """Return a fair classifier under specified fairness constraints.
@@ -222,21 +226,14 @@ class ExponentiatedGradient(BaseEstimator, MetaEstimatorMixin):
             the result will be a scalar. Otherwise the result will be a vector
         :rtype: Scalar or vector
         """
-
+        # print('predict X', X)
         probs = self._pmf_predict(X).astype(float)
         positive_probs = probs[:, 1]
-        threshold = np.random.rand(len(positive_probs))
+
+        threshold = self.randomthresholds[X.index[0]:X.index[-1]+1]
+        # threshold = np.random.random(X.shape[0])
         dec = (positive_probs >= threshold) * 1
-        # dec_prob = np.array([[7,7]])
-        #
-        # i = 0
-        # for d in dec:
-        #     prop_dec = probs[i,int(d)]
-        #     dec_prob = np.append(dec_prob, [[d, prop_dec]], axis=0)
-        #     i+=1
-        # dec_prob =  dec_prob[1:, :]
-        #
-        # return dec_prob
+
 
         return dec, probs
 

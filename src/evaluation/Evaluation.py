@@ -52,7 +52,9 @@ class Evaluation(object):
         self.i_scores = 0
         self.path = path
 
-        x_test, self.a_test, self.y_test = B.sample_test_dataset(TT, seed)
+        # randomstate = np.random.RandomState(seed)
+        x_test, self.a_test, self.y_test = B.sample_test_dataset(TT,seed)
+        # print('TEST DATA', x_test, self.a_test, self.y_test)
         self.XA_test = pd.concat([x_test,self.a_test], axis = 1)
         # test_data = {'A_test': self.a_test.tolist(), 'Y_test': self.y_test.tolist()}
         # test_path = "{}test_data.json".format(path)

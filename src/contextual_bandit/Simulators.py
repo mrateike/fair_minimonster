@@ -23,16 +23,21 @@ class DatasetBandit(object):
 
     def sample_test_dataset(self, T, seed):
         x, a, y = self.distribution.sample_train_dataset(T, seed)
+
         X = pd.Series(x.squeeze(), name='features')
         Y = pd.Series(y.squeeze(), name='label').astype(int)
         A = pd.Series(a.squeeze(), name='sensitive_features').astype(int)
+        # print('SAMPLE TEST DATASET', pd.concat([X, Y, A], axis=1))
         return X, A, Y
 
     def sample_dataset(self, T, seed):
         x, a, y = self.distribution.sample_train_dataset(T, seed)
+
         X = pd.Series(x.squeeze(), name='features')
         Y = pd.Series(y.squeeze(), name='label').astype(int)
         A = pd.Series(a.squeeze(), name='sensitive_features').astype(int)
+        # print('SAMPLE TEST DATASET', pd.concat([X, Y, A], axis=1))
+
         L = pd.DataFrame(columns=['l0', 'l1'])
 
         for i, value in Y.items():

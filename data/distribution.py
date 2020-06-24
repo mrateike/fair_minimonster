@@ -158,7 +158,7 @@ class UncalibratedScore(GenerativeDistribution):
 
         shifts = s - 0.5
         x = truncnorm.rvs(
-            -self.bound + shifts, self.bound + shifts, loc=-shifts
+            -self.bound + shifts, self.bound + shifts, loc=-shifts, random_state = random
         ).reshape(-1, 1)
 
         if self.bias:

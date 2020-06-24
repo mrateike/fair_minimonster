@@ -15,9 +15,9 @@ from sklearn.linear_model import LogisticRegression
 # import matplotlib.pyplot as plt
 
 
-def argmin(eps, nu, fairness, dataset1, dataset2=None):
+def argmin(randthresh, eps, nu, fairness, dataset1, dataset2=None):
 
-    expgrad_XA = ExponentiatedGradient(
+    expgrad_XA = ExponentiatedGradient(randthresh,
         dataset1,
         LogisticRegression(solver='liblinear', fit_intercept=True),
         constraints=fairness,
