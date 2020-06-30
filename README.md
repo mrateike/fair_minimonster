@@ -12,7 +12,7 @@ run
 conda env create -f environment.yml
 ```
 
-A new environment called fair_minimonster will appeared, to activate it execute 
+A new environment called fair_minimonster will appear, to activate it execute 
 
 ```
 conda activate fair_minimonster
