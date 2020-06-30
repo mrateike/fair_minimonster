@@ -1,26 +1,20 @@
+# Copyright (c) 2016 akshaykr, adapted by mrateike
 import numpy as np
 import pandas as pd
 
 """
 adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
-This is the main place where we parse different datasets.
-For each dataset, implement a ContextIterator, which initializes the 
-distributions
+This is a wrapper class for the stochastic fair policy retured
+by the oracle 
 """
 
-
 class Policy(object):
-    """
-    A policy object prescribes actions for contexts
-    The default policy class prescribes random actions
-    """
     def __init__(self):
         pass
     def get_decision(self, features, L):
         pass
     def get_all_decisions(self, features, K, L):
         pass
-
 
 class RegressionPolicy(Policy):
 
@@ -40,7 +34,9 @@ class RegressionPolicy(Policy):
 
 
     def get_all_decisions(self, x):
-
+        # get decisions of policy for a vector of x
+        # returns a dataframe with the decisions
+        # and the probability with which the decision was taken
         if len(x.index) == 0:
             return []
         dec, prob = self.model.predict(x)

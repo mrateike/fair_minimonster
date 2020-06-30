@@ -16,9 +16,83 @@ from data.util import get_list_of_seeds
 
 """
 This is the main function for the fair minimonster algorithm
+
+--- parameters ----
+    T: int  
+        total number of rounds
+    alpha: float 
+        splitting parameter for rounds, i.e., T1 = T^{2alpha}
+        min vaue: 0.25, max value: 0.5
+    TT: int
+        total number of test data to be generated
+    fairness: str
+        fairness type ('DP' for demograhpic parity, 'EO' for equal opportunity)
+    batch: str
+        batch type ('none': no batch, 'lin': linear , 'exp': exponential)
+    bt : int
+        batch size for linear batch otherwise 1
+    eps: float
+        fairness relaxation parameter, value > 0
+    nu: float
+        accuracy parameter, value > 0
+    dataset : int
+        dataset type ('Uncalibrated': synthetic dataset, 'FICO': FICO datset)
+    path: str
+        path directory to save results
+    mu : float
+        minimum probability for smoothed distribution
+    i: int
+        maximum number of iterations of contextual bandit algorithm
+    seed: int
+        random seed for fixing training and test data
+   
 """
 
-def play(T, alpha, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, mu, num_iterations):
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('-T', '--total_data', nargs='+', type=int, required=True,
+                        help='list of total data s to be used')
+    parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
+                        help='phase 1 phase 2 data split parameter')
+    parser.add_argument('-s', '--seeds', type=int, nargs='+', required=False,
+                        help='seeds for phase 1, 2, testing', default=967)
+    parser.add_argument('-f', '--fairness_type', type=str, nargs='+', required=True,
+                        help="select the type of fairness (DP, EO)")
+    parser.add_argument('-bt', '--batch_type', type=str, nargs='+', required=True,
+                        help='batches type used (no_batch, exp, lin, warm_start)')
+    parser.add_argument('-bs', '--batch_size', type=str, nargs='+', required=False, default=1,
+                        help='batches size used for lin (required) otherwise 1')
+    parser.add_argument('-eps', '--eps', type=float, nargs='+', required=True,
+                        help="list of statistical unfairness paramenters (beta) to be used")
+    parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
+                        help="list of accuracy parameters of the oracle to be used")
+    parser.add_argument('-mu', '--mu', type=float, nargs='+', required=True,
+                        help="minimum probability for simulating the bandit")
+    parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
+                        help="select the distribution (FICO, Uncalibrated)")
+    parser.add_argument('-i', '--iterations', type=str, nargs='+', required=True,
+                        help="number of iterations of the bandit coordinate decent algo")
+    parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
+
+    base_save_path = args.path
+    base_save_path = "{}/results".format(base_save_path)
+    Path(base_save_path).mkdir(parents=True, exist_ok=True)
+
+    T = args.total_data[0]
+    TT = T
+
+    fairness = args.fairness_type[0]
+    batch = args.batch_type[0]
+    batchsize = args.batch_size[0]
+    eps = args.eps[0]
+    nu = args.nu[0]
+    dataset = args.data[0]
+    seed = args.seeds[0]
+    mu = args.mu[0]
+    num_iterations = args.iterations[0]
+
 
     if fairness == "EO":
         fairness = TruePositiveRateDifference()

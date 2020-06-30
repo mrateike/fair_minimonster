@@ -1,4 +1,4 @@
-# mpl.use('Qt5Agg')
+# Copyright (c) 2016 akshaykr, adapted by mrateike
 import numpy as np
 import pandas as pd
 from src.contextual_bandit import Argmin
@@ -27,46 +27,18 @@ class FairMiniMonster(object):
         Equal opportunity in online classification with partial feedback.
         In Advances in Neural Information Processing Systems (pp. 8974-8984).
 
-
         Parameters
         ----------
-
-        constraints : fairlearn.reductions.Moment
-            The disparity constraints expressed as moments
-        eps : float
-            Allowed fairness constraint violation; the solution is guaranteed to
-            have the error within :code:`2*best_gap` of the best error under
-            constraint `eps`; the constraint violation is at most
-            :code:`2*(eps+best_gap)`
-        max_iter : int
-            Maximum number of iterations
-        nu : float
-            Convergence threshold for the duality gap, corresponding to a
-            conservative automatic setting based on the statistical uncertainty
-            in measuring classification error
-        eta_0 : float
-            Initial setting of the learning rate
-        run_linprog_step : bool
-            if True each step of exponentiated gradient is followed by the saddle
-            point optimization over the convex hull of classifiers returned so
-            far; default True
+        B: Simulator
+            simulator class to generate training and test datsets
+        fairness : str
+            type of fairness (DP, EO)
+        eps:
         """
 
     def __init__(self, B, fairness, eps, nu, TT, seed, path, mu, num_iterations):
         """
         Initialization of Minimonster algorithm
-        Args:
-                B: simulator object for access to datasets
-
-                fafairleanirness: type of fairness to optimize for
-                eps: fairness constraint slack variable (relaxation parameter)
-                nu:
-                TT:
-                seed: random seed (int)
-                path:
-                mu:
-                num_iterations:
-
         """
 
         self.B = B
@@ -92,6 +64,13 @@ class FairMiniMonster(object):
 
 
     def fit(self, dataset, alpha, batch, batchsize):
+        """ function to learn distribution Q over T rounds
+
+        Parameters
+        ----------
+
+        """
+
         self.real_loss = []
 
 

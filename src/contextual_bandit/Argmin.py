@@ -1,9 +1,10 @@
+# Copyright (c) 2016 akshaykr, adapted by mrateike
+# Licensed under the MIT License.
 from src.contextual_bandit.Policy import *
 from src.fairlearn.reductions._exponentiated_gradient.exponentiated_gradient import ExponentiatedGradient
 from sklearn.linear_model import LogisticRegression
 _L0 = "l0"
 _L1 = "l1"
-
 
 """
 This class calls the fair orcale for the contextual bandit algorithm

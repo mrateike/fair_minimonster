@@ -1,4 +1,4 @@
-
+# Copyright (c) 2020 mrateike
 import os
 import sys
 

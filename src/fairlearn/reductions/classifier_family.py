@@ -1,3 +1,5 @@
+# Copyright (c) 2020 mrateike
+
 import pickle
 import pandas as pd
 import numpy as np

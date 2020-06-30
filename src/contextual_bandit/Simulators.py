@@ -1,3 +1,4 @@
+# Copyright (c) 2016 akshaykr, adapted by mrateike
 import pandas as pd
 from src.contextual_bandit.Policy import *
 

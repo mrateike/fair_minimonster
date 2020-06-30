@@ -1,4 +1,5 @@
-
+# Copyright (c) 2016 akshaykr, adapted 2020 by mrateike
+# Licensed under the MIT License.
 import pandas as pd
 from data.distribution import UncalibratedScore, FICODistribution
 
