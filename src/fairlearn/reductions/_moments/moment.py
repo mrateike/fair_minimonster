@@ -27,22 +27,18 @@ class Moment:
         self.data_loaded1 = False
 
     def load_data(self, X, y, **kwargs):
-        """Load a set of data for use by this object.
+        """Load a set of data set 2 for use by this object.
 
-        The keyword arguments can contain a :code:`sensitive_features` array.
+            :param X: The feature data
+            :type X: array
 
-        :param X: The feature data
-        :type X: array
-
-        :param y: The true label data
-        :type y: array
-        """
-        # print('moment: load_data y ', y)
+            :param y: The true label data
+            :type y: array
+            """
 
         assert self.data_loaded is False, \
             "data can be loaded only once"
         self.X = X
-        # self.tags = pd.DataFrame({_LABEL: y})
         self.tags = pd.DataFrame(y)
         if _KW_SENSITIVE_FEATURES in kwargs:
             self.tags[_GROUP_ID] = kwargs[_KW_SENSITIVE_FEATURES]
@@ -50,9 +46,7 @@ class Moment:
         self._gamma_descr = None
 
     def load_data1(self, X, y, **kwargs):
-        """Load a set of data for use by this object.
-
-        The keyword arguments can contain a :code:`sensitive_features` array.
+        """Load a set of data set 1 for use by this object.
 
         :param X: The feature data
         :type X: array
@@ -64,7 +58,6 @@ class Moment:
         assert self.data_loaded1 is False, \
             "data can be loaded only once"
         self.X1 = X
-        # self.tags = pd.DataFrame({_LABEL: y})
         self.tags1 = pd.DataFrame(y)
         if _KW_SENSITIVE_FEATURES in kwargs:
             self.tags1[_GROUP_ID] = kwargs[_KW_SENSITIVE_FEATURES]

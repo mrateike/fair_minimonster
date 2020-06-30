@@ -5,6 +5,12 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
+"""
+Implementing the classifier family containing four constant classifiers by assumption of
+Bechavod, Yahav, et al. "Equal opportunity in online classification with partial feedback." 
+Advances in Neural Information Processing Systems. 2019.
+"""
+
 class ClassifierH(object):
 
     def __init__(self):
@@ -18,6 +24,7 @@ class ClassifierH(object):
 
 
 class AcceptAll(ClassifierH):
+    # classifier deciding constantly d = 1
     def __init__(self):
         super().__init__()
         self.name = 'AccAll'
@@ -28,6 +35,7 @@ class AcceptAll(ClassifierH):
         return dec
 
 class DenyAll(ClassifierH):
+    # classifier deciding constantly d = 0
     def __init__(self):
         super().__init__()
         self.name = 'DenyAll'
@@ -38,6 +46,7 @@ class DenyAll(ClassifierH):
         return dec
 
 class SensitiveFlip(ClassifierH):
+    # classifier identity function of a = 0
     def __init__(self):
         super().__init__()
         self.name = 'SensFlip'
@@ -48,6 +57,7 @@ class SensitiveFlip(ClassifierH):
         return dec
 
 class SensitiveEqual(ClassifierH):
+    # classifier identity function of a = 1
     def __init__(self):
         super().__init__()
         self.name = 'SensEqual'

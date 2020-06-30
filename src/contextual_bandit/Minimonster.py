@@ -13,9 +13,10 @@ my_path = os.path.abspath(__file__)  # absolute path
 """
 Implementation adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
 This is the main algorithm Minimonster (coordinate descent) from 
-Agarwal, A., Hsu, D., Kale, S., Langford, J., Li, L., & Schapire, R. (2014). 
-Taming the monster: A fast and simple algorithm for contextual bandits. 
+Agarwal, et al. (2014).  Taming the monster: A fast and simple algorithm for contextual bandits. 
 In International Conference on Machine Learning (pp. 1638-1646).
+Adapted for the fair contextual bandit approach by 
+
 """
 
 
@@ -27,18 +28,34 @@ class FairMiniMonster(object):
         Equal opportunity in online classification with partial feedback.
         In Advances in Neural Information Processing Systems (pp. 8974-8984).
 
-        Parameters
-        ----------
-        B: Simulator
-            simulator class to generate training and test datsets
-        fairness : str
-            type of fairness (DP, EO)
-        eps:
+
         """
 
     def __init__(self, B, fairness, eps, nu, TT, seed, path, mu, num_iterations):
         """
         Initialization of Minimonster algorithm
+
+         Parameters
+        ----------
+        B: Simulator
+            simulator class to generate training and test datsets
+        fairness : str
+            type of fairness (DP, EO)
+        eps: float
+            fairness relaxation parameter, value > 0
+        nu: float
+            accuracy parameter, value > 0
+        TT: int
+            total number of test data to be generated
+        seed: int
+            to fix seed
+        path: str
+            path directory to save results
+        mu: float
+            minimum probability for smoothed distribution
+        num_iterations: int
+            maximum number of iterations of coordinate descent loop
+
         """
 
         self.B = B
@@ -60,14 +77,29 @@ class FairMiniMonster(object):
         # initialize a statistics object for evaluation of pi
         self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B, x_label)
 
+        self.best_loss_t = []
+        self.list_num_policies_added = []
+
 
 
 
     def fit(self, dataset, alpha, batch, batchsize):
         """ function to learn distribution Q over T rounds
+        evaluates the distribution and learning and saves results
+        in .json files, has no return
 
         Parameters
         ----------
+        dataset : pd.DataFrame
+            total dataset
+            size: T datapoints - phase 1 and phase 2 dataset (combined)
+        alpha: float
+            dataset splitting parameter, i.e. T1 = T^{2alpha}
+            values: [0.25, 0.5]
+        batch: str
+            batch type ('none', 'lin', 'exp')
+        batchsize : int
+            batch size for lin batch type (default 1 if lin or exp)
 
         """
 
@@ -75,7 +107,8 @@ class FairMiniMonster(object):
 
 
 
-
+        # calculation of phase 1 / phase 2 split
+        # given alpha and T
         T = dataset.shape[0]
         T1 = int(round(T ** (2 * alpha),0))
         T2 = T-T1
@@ -83,16 +116,17 @@ class FairMiniMonster(object):
         print('T1', T1)
         print('T2', T2)
         self.T = T
+
+        # fix seeds
         rand = np.random.RandomState(21 * self.seed)
         self.randomthresholds = rand.rand(T)
-
         rand1 = np.random.RandomState(27 * self.seed)
         self.randomthresholds1 = rand1.rand(T)
         rand2 = np.random.RandomState(29 * self.seed)
         self.randomthresholds2 = rand2.rand(len(self.statistics_decisions.XA_test))
 
 
-
+        # set batch settings
         training_points = []
         m = 1
         if batch == "exp":
@@ -130,32 +164,35 @@ class FairMiniMonster(object):
 
         # ----------- run loop --------------
 
+        # phase 1 data added to history
         history = dataset.iloc[:T1]
 
 
-        #----IPS & non IPS Regret
+        # save loss for regret calculation later
         self.real_loss.extend(history.loc[:,'l1'].tolist())
 
+        # evaluate phase 1 decisions (d=1)
         scores=pd.Series(np.ones(len(self.statistics_decisions.y_test)))
         self.statistics_decisions.evaluate_scores(scores)
 
-        # for _solve_Opt
+        # set values for _solve_Opt
         psi = 4*(math.e -2)*np.log(T)
 
         m = 0
         t = 0
         self.x_axis = [T1]
+
+        # over all T
         while t <= T:
 
             if m == 0:
                 batchsize = 0
 
+            # UPDATE Q and best_pi
             Q, best_pi = self.update(history, T1, psi, batchsize, m)
 
             if t == T2:
                 break
-
-
 
             if m < len(training_points):
                 batchpoint = training_points[m]
@@ -164,29 +201,36 @@ class FairMiniMonster(object):
                 batchsize = T2-t
                 batchpoint = T2
 
+            # environment draws new context-ground truth pair
             individual = dataset.iloc[(T1+t):(T1+batchpoint)]
 
             t = batchpoint
 
-
+            # context of new sample
             xa = individual.loc[:,['features', 'sensitive_features']]
 
-
+            # SAMPLE: learner decision given context, Q and best_pi
+            # returns decision and probability with which decision was taken
             d, p = self.sample(xa, Q, best_pi, m)
             p = pd.DataFrame(p, index=individual.index)
+
+            # ground truth label of sample
             y = individual.loc[:,'label']
+
+            # get transformed loss vector of decision and grund truth label
             l = self.B.get_loss(d, y)
 
+            # get IPS loss
             lip = l.div(p).to_numpy()
             lip[list(range(0, len(lip))),1-d] = 0
-
             ips_loss = pd.DataFrame(lip, index=l.index)
-
 
             self.real_loss.extend(l.lookup(l.index, d).tolist())
 
             ips_loss = ips_loss.rename(columns={0:'l0', 1:'l1'})
             dataset_update = pd.concat([individual.loc[:,['features', 'sensitive_features', 'label']],ips_loss], axis =1)
+
+            # update history
             history = pd.concat([history, dataset_update], axis = 0, ignore_index=True)
 
 
@@ -198,11 +242,7 @@ class FairMiniMonster(object):
             m += 1
 
         # ------- end of fitting -----------
-
-        # print('x-axis', self.x_axis)
-        # print('ACC', self.statistics_decisions.ACC_list)
-        # print('DP', self.statistics_decisions.DP_list)
-        # print('TPR', self.statistics_decisions.TPR_list)
+        #  saving data
         data_decisions = {'ACC': self.statistics_decisions.ACC_list, \
                      'DP': self.statistics_decisions.DP_list, \
                      'TPR': self.statistics_decisions.TPR_list,
@@ -224,23 +264,8 @@ class FairMiniMonster(object):
         reg = cum_exp_real_loss - cum_exp_best_loss
         reg[reg < 0] = 0
 
-        # ----- Calculate regret T in hindsight ------------
-        xa = history.loc[:, ['features', 'sensitive_features']]
-        ips = history.loc[:, ['l0', 'l1']]
-        db, _ = best_pi.get_decision(xa)
-        ips.columns = range(ips.shape[1])
-        best_loss_T = ips.lookup(ips.index, db).tolist()
-
-        cum_best_loss_T = np.cumsum(best_loss_T)
-        exp_best_loss_T = cum_best_loss_T / timesteps
-        cum_exp_best_loss_T = np.cumsum(exp_best_loss_T)
-
-        regT = cum_exp_real_loss - cum_exp_best_loss_T
-        regT[regT < 0] = 0
-
         reg0_dict = {}
         reg0_dict['regt_cum'] = reg.tolist()
-        reg0_dict['regT_cum'] = regT.tolist()
 
         regret_path = "{}/regret.json".format(self.path)
         save_dictionary(reg0_dict, regret_path)
@@ -252,21 +277,43 @@ class FairMiniMonster(object):
         if training_points[-1] < T2:
             x_axis.extend([T])
 
-
         # --- end of fit -------
 
 
 
     def update(self, history, T1, psi, batch_size, m):
+        """ function to learn new Q and best_pi at updating round m
+        returns: distribution Q, policy best_pi
+
+        Parameters
+        ----------
+        history : pd.DataFrame
+            history H_t with all samples seen so until time t (phase 1 and phase2)
+        T1: int
+            size of phase 1
+        psi: float
+            regularization parameter for regret b_t(pi)
+        batch_size : int
+            amount of new samples using in this updating step
+                constant, if batchtype = 'lin'
+                exponentially growing, if batchtype = 'exp'
+                1, if batchtype = 'none'
+        m : int
+            updating step, if batchtype = 'none' then m = t
+
+        """
 
         dataset1 = history.loc[:T1-1]
         dataset2 = history.loc[T1:].drop(['label'], axis=1)
 
+        # call fair orcale to obtain best_pi minimizing loss
         best_pi = Argmin.argmin(self.randomthresholds, self.eps, self.nu, self.fairness, dataset1, dataset2)
 
         batch = history.iloc[-batch_size:]
 
         batch_xa = batch.loc[:,['features', 'sensitive_features']]
+
+        # evaluate returned best_pi
         batch_best_decisions, _ = best_pi.predict(batch_xa)
         batch_best_decisions = pd.Series(batch_best_decisions).astype(int)
 
@@ -276,7 +323,7 @@ class FairMiniMonster(object):
         l = self.B.get_loss(batch_best_decisions, y)
         self.best_loss_t.extend(l.lookup(l.index, batch_best_decisions).tolist())
 
-
+        # solve coordinate descent problem
         Q = self._solve_op(history, T1, m, best_pi, psi)
 
 
@@ -286,6 +333,28 @@ class FairMiniMonster(object):
         # xa = pd.DataFrame
         # Q = [Policy,float]
         # best_pi = Policy
+
+        """ function to learn new Q and best_pi at updating round m
+           returns: Q, best_pi
+
+           Parameters
+           ----------
+           history : pd.DataFrame
+               history H_t with all samples seen so until time t (phase 1 and phase2)
+           T1: int
+               size of phase 1
+           psi: float
+               regularization parameter for regret b_t(pi)
+           batch_size : int
+               amount of new samples using in this updating step
+                   constant, if batchtype = 'lin'
+                   exponentially growing, if batchtype = 'exp'
+                   1, if batchtype = 'none'
+           m : int
+               updating step, if batchtype = 'none' then m = t
+
+           """
+
 
         pdec = np.zeros((xa.shape[0], 2))
 
@@ -331,27 +400,49 @@ class FairMiniMonster(object):
 
         return dec, pdec
 
-    def _get_mu(self, t):
+    def _get_mu(self, m):
         """
-        Return the current value of mu_t
+        Return the current value of mu_m
+        m = t if batchtype = 'none', otherwise m  = batch updating round
+
         """
         # a = 1.0/(4)
         # b = np.sqrt(np.log(16.0*(self.t**2)*self.B.N/self.delta)/float(4*self.t))
 
 
         a = self.mu
-        if t == 0:
+        if m == 0:
             b = np.inf
         else:
-            b = self.mu * np.sqrt(2) / np.sqrt(t)
+            b = self.mu * np.sqrt(2) / np.sqrt(m)
         c = np.min([a, b])
         return np.min([1, c])
 
 
-    def _solve_op(self, H, T1, m, best_pi, psi, Q=None):
+    def _solve_op(self, H, T1, m, best_pi, psi):
 
         """
-        Main optimization logic for MiniMonster.
+        coordinate descent algorithm
+        returns distribution Q
+
+        Parameters
+        ----------
+        H : pd.DataFrame
+            history H_t with all samples seen so until time t (phase 1 and phase2)
+        T1: int
+            size of phase 1
+        m : int
+            updating step, if batchtype = 'none' then m = t
+        best_pi : RegressionPolicy
+            best policy returned by fair oracle
+        psi: float
+            regularization parameter for regret b_t(pi)
+        batch_size : int
+            amount of new samples using in this updating step
+                constant, if batchtype = 'lin'
+                exponentially growing, if batchtype = 'exp'
+                1, if batchtype = 'none'
+
         """
 
         num_policies_added = 0
@@ -361,7 +452,7 @@ class FairMiniMonster(object):
 
         t = H.shape[0]
 
-
+        #  initialize Q = 0
         Q = []  ## warm start: self.weights
 
         predictions = {}
@@ -371,13 +462,15 @@ class FairMiniMonster(object):
 
         iterations = 0
 
-
+        # loop
         while iterations < int(self.num_iterations):
             iterations += 1
 
             score = np.sum([item[1] * (4 + ((q_losses[item[0]] - leader_loss) / (psi * t * mu))) for item in Q])
 
+            # first constraint (regret)
             if score > 4:
+                #  if violated, shrink all weights with c<1
                 c = 4 / score
                 Q = [(item[0], c * item[1]) for item in Q]
 
@@ -392,14 +485,16 @@ class FairMiniMonster(object):
                 p = np.stack((p0, p1), axis=1)
                 q = np.add(q, w * p)
 
+            # smoothed distribution over decisions
             q = (1.0 - 2 * mu) * q + (mu)
 
+            # calculate v(d), s(d)
             v = 1.0 / (t * q)
             s = 1.0 / (t * (q ** 2))
 
             loss = H.loc[:,['l0', 'l1']].to_numpy()
 
-
+            # reg(tilde) = max{Reg, 0}
             reg = loss - leader_loss
             reg[reg < 0] = 0
             bt = reg / (t * psi * mu)
@@ -407,18 +502,21 @@ class FairMiniMonster(object):
 
             _H = H.loc[:, ['features', 'sensitive_features', 'label']]
 
+            # D(Q, pi) for calling the MINIMIZATION oracle
             loss1 = pd.DataFrame(bt - v, columns=['l0', 'l1'], index=H.index)
             Dpimin_dataset = pd.concat([_H, loss1], axis=1)
 
+            # D(Q, pi) for calculation when adding policy to Q
             loss2 = pd.DataFrame(v - bt, columns=['l0', 'l1'], index=H.index)
             Dpinormal_dataset = pd.concat([_H, loss2], axis=1)
 
             Dpimin_dataset1 = Dpimin_dataset.iloc[0:T1,:]
             Dpimin_dataset2 = Dpimin_dataset.iloc[T1:,:].drop(columns=['label'])
 
-
+            #  calling oracle to obtain policy that violates variance constraint maximally
             pi = Argmin.argmin(self.randomthresholds, self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
 
+            # caching of decisions by pi on history set
             if pi not in q_losses.keys():
                 pi_loss, _ = self.get_cum_loss(H, pi, predictions)
                 q_losses[pi] = pi_loss
@@ -431,7 +529,7 @@ class FairMiniMonster(object):
 
             Dpi = Dpi - 4
 
-
+            # Second constraint : variance constraint
             if Dpi > 0:
                 loss3 = pd.DataFrame(v, columns=['l0', 'l1'], index=H.index)
                 Vpi_dataset = pd.concat([_H, loss3], axis=1)
@@ -443,20 +541,35 @@ class FairMiniMonster(object):
                 Spi, _ = self.get_cum_loss(Spi_dataset, pi, predictions)
 
                 toadd = (Vpi + Dpi) / (2 * (1 - 2*mu) * Spi)
+
+                #  add a new pi to Q, if constraint violated
                 Q.append((pi, toadd))
                 num_policies_added +=1
 
             else:
+                # naturally end algorithm, when constraint not violated anymore
                 self.list_num_policies_added.append(num_policies_added)
                 return Q
 
-        # print('----- END SOLVE OP ----------')
+        # end algorithm, when maximum number of loops reached
         self.list_num_policies_added.append(num_policies_added)
-
         return Q
 
     def get_cum_loss(self, dataset, pi, predictions):
-        # H: DF, best_pi: Policy, pred: dict, t:int, feat:DF
+
+        """
+        calculate cumulative loss for policy pi on dataset
+
+        Parameters
+        ----------
+        dataset : pd.DataFrame
+            dataset with loss to be calculated
+        pi: RegressionPolicy
+            size of phase 1
+        predictions : dict
+            cashed decisions from for policies
+
+        """
 
         if pi not in predictions.keys():
             values = pi.get_all_decisions(dataset.loc[:, ['features', 'sensitive_features']])

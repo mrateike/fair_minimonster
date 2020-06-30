@@ -1,7 +1,6 @@
 
 import os
 import sys
-
 root_path = os.path.abspath(os.path.join('.'))
 if root_path not in sys.path:
     sys.path.append(root_path)
@@ -10,9 +9,8 @@ from scipy.special import expit as sigmoid
 from scipy.stats.distributions import truncnorm
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg')
-from data.util import train_test_split, get_random, whiten
+from data.util import get_random
 from responsibly.dataset import build_FICO_dataset
-
 
 """
 (c) Floyd Kretschmar (https://github.com/floydkretschmar/master-thesis)
@@ -78,14 +76,6 @@ class GenerativeDistribution(BaseDistribution):
         raise NotImplementedError("Subclass must override sample_features(self, n).")
 
     def _sample_labels(self, x, s, random):
-     """
-    Draws a n-dimensional ground truth vector.
-    Args:
-        x: nxd matrix of non-sensitive feature vectors
-        s: n-dimensional vector of sensitive attributes
-    Returns:
-        y: n-dimensional ground truth vector
-    """
         raise NotImplementedError("Subclass must override sample_labels(self, x, s).")
 
     def _sample_train_dataset_core(self, n_train, random):
@@ -163,7 +153,6 @@ class FICODistribution(GenerativeDistribution):
     Toolkit for Auditing and Mitigating Bias
     and Fairness of Machine Learning Systems (c) 2018 Shlomi Hod
     https://docs.responsibly.ai/dataset.html#fico-dataset"""
-
 
     def __init__(self, fraction_protected, bias=False):
         super(FICODistribution, self).__init__(fraction_protected=fraction_protected, bias=bias)

@@ -3,8 +3,7 @@ import numpy as np
 import pandas as pd
 
 """
-adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
-This is a wrapper class for the stochastic fair policy retured
+adapted wrapper class for the stochastic fair policy retured
 by the oracle 
 """
 

@@ -1,3 +1,10 @@
+import os
+import sys
+
+root_path = os.path.abspath(os.path.join("."))
+if root_path not in sys.path:
+    sys.path.append(root_path)
+
 from src.fairlearn.reductions._exponentiated_gradient.exponentiated_gradient import ExponentiatedGradient
 from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity, TruePositiveRateDifference
 from matplotlib import pyplot as plt
@@ -12,7 +19,8 @@ import time
 from sklearn.linear_model import LogisticRegression
 from src.evaluation.Evaluation import Evaluation
 import numpy as np
-from data.util import get_list_of_seeds
+import argparse
+from pathlib import Path
 
 """
 This is the main function for the fair minimonster algorithm
@@ -42,7 +50,7 @@ This is the main function for the fair minimonster algorithm
     mu : float
         minimum probability for smoothed distribution
     i: int
-        maximum number of iterations of contextual bandit algorithm
+        maximum number of iterations of coordinate descent loop
     seed: int
         random seed for fixing training and test data
    
@@ -76,9 +84,11 @@ if __name__ == "__main__":
                         help="number of iterations of the bandit coordinate decent algo")
     parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
 
+    args = parser.parse_args()
+
     base_save_path = args.path
-    base_save_path = "{}/results".format(base_save_path)
-    Path(base_save_path).mkdir(parents=True, exist_ok=True)
+    path = "{}/results".format(base_save_path)
+    Path(path).mkdir(parents=True, exist_ok=True)
 
     T = args.total_data[0]
     TT = T
@@ -91,6 +101,7 @@ if __name__ == "__main__":
     dataset = args.data[0]
     seed = args.seeds[0]
     mu = args.mu[0]
+    alpha = args.alpha[0]
     num_iterations = args.iterations[0]
 
 

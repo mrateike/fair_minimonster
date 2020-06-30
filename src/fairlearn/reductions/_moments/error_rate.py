@@ -15,9 +15,7 @@ class ErrorRate(ClassificationMoment):
     #short_name = "Err"
 
     def load_data(self, X, loss):
-        """Load the specified data into the object."""
-
-        # super().load_data(X, y, **kwargs)
+        """Load the specified data phase 2 into the object."""
 
         self.X = X
         self.tags = pd.DataFrame(loss)
@@ -30,12 +28,10 @@ class ErrorRate(ClassificationMoment):
 
 
     def load_data1(self, X, loss):
-
+        """Load the specified data phase 1 into the object."""
         self.X_all = X
         self.tags_all = pd.DataFrame(loss)
         self.index = [_ALL]
-
-
 
 
     def gamma(self, predictor):

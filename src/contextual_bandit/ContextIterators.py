@@ -4,10 +4,9 @@ import pandas as pd
 from data.distribution import UncalibratedScore, FICODistribution
 
 """
-adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
-This is the main place where we parse different datasets.
+adapted for parsing different datasets.
 For each dataset, implement a ContextIterator, which initializes the 
-distributions
+distributions.
 """
 
 

@@ -19,6 +19,11 @@ from matplotlib.gridspec import GridSpec
 
 import tikzplotlib as tpl
 
+"""
+Evaluation class for computing and saving fairness, accuracy and regret
+Includes a plot function
+"""
+
 
 
 class Evaluation(object):

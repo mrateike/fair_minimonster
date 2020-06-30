@@ -2,7 +2,7 @@
 import pandas as pd
 from src.contextual_bandit.Policy import *
 
-from data.distribution import UncalibratedScore, FICODistribution, AdultCreditDistribution, COMPASDataset
+from data.distribution import UncalibratedScore, FICODistribution
 
 """
 Adapted from akshaykr (https://github.com/akshaykr/oracle_cb)

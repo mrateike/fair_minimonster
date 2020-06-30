@@ -52,15 +52,7 @@ class ConditionalSelectionRate(ClassificationMoment):
     def load_data(self, X, y, event=None, utilities=None, **kwargs):
         """Load the specified data into this object.
         This adds a column `event` to the `tags` field.
-        The `utilities` is a 2-d array which correspond to g(X,A,Y,h(X)) as mentioned in the paper
-        `Agarwal et al. (2018) <https://arxiv.org/abs/1803.02453>`. The `utilities` defaults to
-        h(X), i.e. [0, 1] for each X_i. The first column is G^0 and the second is G^1.
-        Assumes binary classification with labels 0/1.
-        .. math::
-        utilities = [g(X,A,Y,h(X)=0), g(X,A,Y,h(X)=1)]
         """
-        # super().load_data(X, y, **kwargs)
-
 
         self.X = X
         self.tags = pd.DataFrame()
@@ -69,16 +61,12 @@ class ConditionalSelectionRate(ClassificationMoment):
             self.tags[_GROUP_ID] = kwargs[_KW_SENSITIVE_FEATURES]
         self.tags[_EVENT] = event
 
-        # print('phase 2 data', self.tags)
-
-
         # construct a joint table
         self.X_all = pd.concat([self.X_all, self.X], axis = 0, ignore_index=True)
         self.tags_all = pd.concat([self.tags_all, self.tags], axis = 0, ignore_index=True)
 
 
     def load_data1(self, X, y, event=None, utilities=None, **kwargs):
-        # super().load_data1(X, y, **kwargs)
         self.X1 = X
         self.X_all = self.X1
         # label only needed for TPR, not for DP
@@ -89,16 +77,8 @@ class ConditionalSelectionRate(ClassificationMoment):
             self.tags_all[_GROUP_ID] = kwargs[_KW_SENSITIVE_FEATURES]
         self.tags_all[_EVENT] = event
 
-        # print('phase 1 data', self.tags_all)
-
         # oracle construction
         self.calculate_probs()
-
-        # only needed for error rate ratio
-        # if utilities is None:
-        #     utilities = np.vstack([np.zeros(y.shape, dtype=np.float64),
-        #                            np.ones(y.shape, dtype=np.float64)]).T
-        # self.utilities = utilities
 
     def calculate_probs(self):
         self.prob_event = self.tags_all.groupby(_EVENT).size() / self.X_all.shape[0]
@@ -113,9 +93,6 @@ class ConditionalSelectionRate(ClassificationMoment):
     def gamma(self, predictor):
         """Calculate the degree to which constraints are currently violated by the predictor."""
         # on phase 1 data
-
-        # utility_diff = self.utilities[:, 1] - self.utilities[:, 0]
-        # pred = utility_diff.T * predictor(self.X1) + self.utilities[:, 0]
 
         pred = predictor(self.X_all)
         # print('pred', pred)
@@ -132,21 +109,10 @@ class ConditionalSelectionRate(ClassificationMoment):
                              keys=["+", "-"],
                              names=[_SIGN, _EVENT, _GROUP_ID])
 
-        # expect_group_event[_UPPER_BOUND_DIFF] = self.ratio * expect_group_event[_PREDICTION] - \
-        #     expect_event[_PREDICTION]
-        # expect_group_event[_LOWER_BOUND_DIFF] = - expect_group_event[_PREDICTION] \
-        #     + self.ratio * expect_event[_PREDICTION]
-        #
-        # g_signed = pd.concat([expect_group_event[_UPPER_BOUND_DIFF],
-        #                       expect_group_event[_LOWER_BOUND_DIFF]],
-        #                      keys=["+", "-"],
-        #                      names=[_SIGN, _EVENT, _GROUP_ID])
-        # self._gamma_descr = str(expect_group_event[[_PREDICTION, _UPPER_BOUND_DIFF,
-        #                                             _LOWER_BOUND_DIFF]])
 
         return g_signed
 
-    # TODO: this can be further improved using the overcompleteness in group membership
+
     def project_lambda(self, lambda_vec):
         """Return the projected lambda values.
 
@@ -181,37 +147,10 @@ class ConditionalSelectionRate(ClassificationMoment):
         lambda_signed = lambda_vec["+"] - lambda_vec["-"]
         adjust = lambda_signed.sum(level=_EVENT) / self.prob_event - lambda_signed / self.prob_group_event
 
-        # ----- option for learning on only fair on phase 1 -------
-        # signed_weights = self.tags1.apply(
-        #  ----- option for learning on fair on all data (DP) -------
 
         signed_weights = self.tags_all.apply(
             lambda row: 0 if pd.isna(row[_EVENT]) else adjust[row[_EVENT], row[_GROUP_ID]], axis=1)
         return signed_weights
-
-
-
-
-
-
-        # lambda_event = (lambda_vec["+"] - self.ratio * lambda_vec["-"]).sum(level=_EVENT) / \
-        #     self.prob_event
-        # lambda_group_event = (self.ratio * lambda_vec["+"] - lambda_vec["-"]) / \
-        #     self.prob_group_event
-        # adjust = lambda_event - lambda_group_event
-
-
-        # utility_diff = self.utilities[:, 1] - self.utilities[:, 0]
-        # signed_weights = utility_diff.T * signed_weights
-
-        #----- option for learning on only fair on phase 1 -------
-        # signed_weights = self.tags1.apply(
-        #    lambda row: 0 if pd.isna(row[_EVENT]) else adjust[row[_EVENT], row[_GROUP_ID]], axis=1)
-        # no_signed_weights = pd.Series(np.zeros(self.tags.shape[0]))
-        # signed_weights_all = pd.concat([signed_weights, no_signed_weights], axis=0, ignore_index=True)
-        #
-        # return signed_weights_all
-
 
 
 
@@ -278,11 +217,11 @@ class TruePositiveRateDifference(ConditionalSelectionRate):
     short_name = "TruePositiveRateDifference"
 
     def load_data(self, X, y, **kwargs):
-        """Load the specified data into the object."""
+        """Load the specified data phase 2 into the object."""
         super().load_data(X, y, event=float('NaN'), **kwargs)
 
     def load_data1(self, X, y, **kwargs):
-        """Load the specified data into the object."""
+        """Load the specified data phase 1 into the object."""
         event = pd.Series(y.squeeze().to_numpy()).apply(lambda y: _LABEL + "=" + str(y) if y == 1 else float('NaN'))
         super().load_data1(X, y,
                           event=event,
@@ -325,30 +264,3 @@ class EqualizedOdds(ConditionalSelectionRate):
                           event=pd.Series(y).apply(lambda y: _LABEL + "=" + str(y)),
                           **kwargs)
 
-
-# class ErrorRateRatio(ConditionalSelectionRate):
-#     r"""Implementation of Error Rate Ratio as a moment.
-#
-#     Measures the ratio in errors per attribute by overall error.
-#     The 2-sided version of error ratio can be written as
-#     ratio <= error(A=a) / total_error <= 1/ratio
-#     .. math::
-#     ratio <= E[abs(h(x) - y)| A = a] / E[abs(h(x) - y)] <= 1/ratio\; \forall a
-#
-#     This implementation of :class:`ConditionalSelectionRate` defines a single event, `all`.
-#     Consequently, the `prob_event` :class:`pandas:pandas.Series` will only have a single
-#     entry, which will be equal to 1.
-#
-#     The `index` property will have twice as many entries (corresponding to the Lagrange multipliers
-#     for positive and negative constraints) as there are unique values for the sensitive feature.
-#
-#     The :meth:`signed_weights` method will compute the costs according to Example 3 of
-#     `Agarwal et al. (2018) <https://arxiv.org/abs/1803.02453>`_.
-#     However, in this scenario, g = abs(h(x)-y), rather than g = h(x)
-#     """
-#
-#     short_name = "ErrorRateRatio"
-#
-#     def load_data(self, X, y, **kwargs):
-#         """Load the specified data into the object."""
-#         super().load_data(X, y, event=_ALL, utilities=np.vstack([y, 1-y]).T, **kwargs)
