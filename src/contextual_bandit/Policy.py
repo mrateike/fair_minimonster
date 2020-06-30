@@ -1,6 +1,14 @@
 import numpy as np
 import pandas as pd
 
+"""
+adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
+This is the main place where we parse different datasets.
+For each dataset, implement a ContextIterator, which initializes the 
+distributions
+"""
+
+
 class Policy(object):
     """
     A policy object prescribes actions for contexts

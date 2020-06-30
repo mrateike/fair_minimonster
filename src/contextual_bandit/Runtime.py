@@ -2,7 +2,7 @@ from src.fairlearn.reductions._exponentiated_gradient.exponentiated_gradient imp
 from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity, TruePositiveRateDifference
 from matplotlib import pyplot as plt
 from src.contextual_bandit import Simulators
-from src.contextual_bandit.Minimonster import MiniMonster
+from src.contextual_bandit.Minimonster import FairMiniMonster
 import pandas as pd
 from data.util import save_dictionary
 
@@ -14,15 +14,11 @@ from src.evaluation.Evaluation import Evaluation
 import numpy as np
 from data.util import get_list_of_seeds
 
-# class Runtime(object):
+"""
+This is the main function for the fair minimonster algorithm
+"""
 
 def play(T, alpha, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed, mu, num_iterations):
-
-
-    # seed_test = 45*seed
-    # seed_train = 17*seed
-
-
 
     if fairness == "EO":
         fairness = TruePositiveRateDifference()
@@ -31,78 +27,17 @@ def play(T, alpha, TT, fairness, batch, batchsize, eps, nu, dataset, path, seed,
 
     B = Simulators.DatasetBandit(dataset)
 
-    # randomstate = np.random.RandomState(seed)
     dataset = B.sample_dataset(T, seed)
-    # print('TRAIN DATA', dataset)
-    # dataset1 = dataset.iloc[:T1]
-    # dataset2 = dataset.iloc[T1:(T1+T2)]
 
-
-    M = MiniMonster(B, fairness, eps, nu, TT, seed, path, mu, num_iterations)
+    M = FairMiniMonster(B, fairness, eps, nu, TT, seed, path, mu, num_iterations)
 
     print("------------- start fit ---------------")
     start = time.time()
 
-    # input fairness
     M.fit(dataset, alpha, batch, batchsize)
 
     stop = time.time()
     training_time = np.array([stop - start])
 
-
-
-
     print('------------- END of ALGORITHM  ----- time', training_time)
 
-
-
-
-
-
-
-
-
-
-    #
-    #
-    # # testing rounds ! dont do too small!
-    #
-    # print("---- EVALUATION -----")
-    # dataset_test = B.get_new_context_set(TT)
-    # # print('dataset_test', dataset_test)
-    # a_test = dataset_test.loc[:, 'sensitive_features']
-    # y_test = dataset_test.loc[:, 'label']
-    # xa_test = dataset_test.drop(columns=['sensitive_features', 'label', 'l0', 'l1'])
-    #
-    # dec_prob = best_pi.predict(xa_test)
-    # scores = pd.Series(dec_prob[:, 0], name="scores_expgrad_XA").astype(int)
-    #
-    # acc, mean_pred, parity, FPR, TPR, EO, util  = statistics1.get_stats(y_test, scores, a_test)
-    # statistics1.save_stats(acc, mean_pred, parity, FPR, TPR, EO, util, scores)
-    #
-    #
-    # print("------------- COMPARISON without phase 2 -----")
-    #
-    # _y = dataset1.loc[:, 'label']
-    # XA = pd.DataFrame(dataset1.drop(columns=['sensitive_features', 'label', 'l0', 'l1']))
-    # A = pd.Series(dataset1.loc[:, 'sensitive_features'], name='sensitive_features')
-    # L = pd.DataFrame(dataset1.loc[:, ['l0', 'l1']])
-    #
-    #
-    # expgrad_XA = ExponentiatedGradient(
-    #     dataset1,
-    #     LogisticRegression(solver='liblinear', fit_intercept=True),
-    #     constraints=fairness,
-    #     eps=eps,
-    #     nu=nu)
-    #
-    # expgrad_XA.fit(
-    #     XA,
-    #     L,
-    #     sensitive_features=A)
-    #
-    # dec_prob = expgrad_XA.predict(xa_test)
-    # scores = pd.Series(dec_prob[:, 0], name="scores_expgrad_XA").astype(int)
-    #
-    # acc, mean_pred, parity, FPR, TPR, EO, util = statistics2.get_stats(y_test, scores, a_test)
-    # statistics2.save_stats(acc, mean_pred, parity, FPR, TPR, EO, util, scores)

@@ -55,8 +55,6 @@ if __name__ == "__main__":
     T1 = round(T ** (2 * args.alpha[0]))
     T2 = T - T1
 
-
-
     base_save_path = args.path
     eps = "eps_{}".format((args.eps[0]))
     mu = "mu_{}".format((args.mu[0]))
@@ -65,7 +63,6 @@ if __name__ == "__main__":
 
     base_save_path = "{}/{}-{}-{}-{}".format(base_save_path, eps, mu, nu, T2)
     Path(base_save_path).mkdir(parents=True, exist_ok=True)
-
 
     seed_test = args.seeds[0]*45
     seed_training = 17*args.seeds[0]
@@ -87,7 +84,6 @@ if __name__ == "__main__":
     i = 0
 
     while i < args.iterations:
-        # print('I am computing policy ', i)
         play(dataset1, dataset2, fairness, args.eps[0], args.nu[0], statistics, args.mu[0])
         i += 1
 

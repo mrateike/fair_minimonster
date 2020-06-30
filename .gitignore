@@ -6,16 +6,18 @@
 **/test
 **/isabel_test
 **/results
+**/data_plots
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
-# C extensions
+# extensions
 *.so
 *.csv
 *.sub
-*.ipynb
+
 
 # Distribution / packaging
 .Python

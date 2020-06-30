@@ -1,21 +1,19 @@
+
 import pandas as pd
-# from data.uncalibrated_score import UncalibratedScore
-from data.distribution import UncalibratedScore, FICODistribution, AdultCreditDistribution, COMPASDataset
-#from data.uncalibrated_score import UncalibratedScore
+from data.distribution import UncalibratedScore, FICODistribution
+
 """
+adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
 This is the main place where we parse different datasets.
-For each dataset, implement a ContextIterator with a next method,
-that reads the data file and returns a context and reward object.
+For each dataset, implement a ContextIterator, which initializes the 
+distributions
 """
 
 
 class ContextIterator(object):
-
     def __init__(self):
+        # distribution between two sensitive groups
         self.fraction_protected = 0.5
-        self.test_percentage = 0.2
-
-
 
 class UncalibratedContextIterator(ContextIterator):
     def __init__(self):
@@ -27,15 +25,6 @@ class FICODistributionContextIterator(ContextIterator):
         super(FICODistributionContextIterator,self).__init__()
         self.distribution = FICODistribution(self.fraction_protected)
 
-class COMPASDistributionContextIterator(ContextIterator):
-    def __init__(self):
-        super(COMPASDistributionContextIterator, self).__init__()
-        self.distribution = COMPASDistribution(self.fraction_protected)
-
-class AdultCreditDistributionContextIterator(ContextIterator):
-    def __init__(self):
-        super(AdultCreditDistributionContextIterator, self).__init__()
-        self.distribution = AdultCreditDistribution(self.test_percentage)
 
 
 

@@ -1,4 +1,3 @@
-# from Floyd
 
 import os
 import sys
@@ -6,15 +5,20 @@ import sys
 root_path = os.path.abspath(os.path.join('.'))
 if root_path not in sys.path:
     sys.path.append(root_path)
-
 import numpy as np
-# pylint: disable=no-name-in-module
 from scipy.special import expit as sigmoid
 from scipy.stats.distributions import truncnorm
 import matplotlib.pyplot as plt
 plt.switch_backend('Agg')
 from data.util import train_test_split, get_random, whiten
-from responsibly.dataset import build_FICO_dataset, COMPASDataset, AdultDataset, GermanDataset
+from responsibly.dataset import build_FICO_dataset
+
+
+"""
+(c) Floyd Kretschmar (https://github.com/floydkretschmar/master-thesis)
+Specifies and generates datasets to be sampled from 
+Options: UncalibratedScore (synthetic data), FICODistribution
+"""
 
 
 class BaseDistribution(object):
@@ -33,26 +37,26 @@ class BaseDistribution(object):
 
     def sample_test_dataset(self, n_test, seed=None):
         """
-        Draws a nxd matrix of non-sensitive feature vectors, a n-dimensional vector of sensitive attributes
-        and a n-dimensional ground truth vector used for testing.
-        Args:
-            n: The number of examples for which to draw attributes.
-        Returns:
-            x: nxd matrix of non-sensitive feature vectors
-            s: n-dimensional vector of sensitive attributes
-        """
+         Draws a nxd matrix of non-sensitive feature vectors, a n-dimensional vector of sensitive attributes
+         and a n-dimensional ground truth vector used for testing.
+         Args:
+             n: The number of examples for which to draw attributes.
+         Returns:
+             x: nxd matrix of non-sensitive feature vectors
+             s: n-dimensional vector of sensitive attributes
+         """
         return self._sample_test_dataset_core(n_test, get_random(seed) if seed else get_random())
 
     def sample_train_dataset(self, n_train, seed=None):
         """
-        Draws a nxd matrix of non-sensitive feature vectors, a n-dimensional vector of sensitive attributes
-        and a n-dimensional ground truth vector used for training.
-        Args:
-            n: The number of examples for which to draw attributes.
-        Returns:
-            x: nxd matrix of non-sensitive feature vectors
-            s: n-dimensional vector of sensitive attributes
-        """
+         Draws a nxd matrix of non-sensitive feature vectors, a n-dimensional vector of sensitive attributes
+         and a n-dimensional ground truth vector used for training.
+         Args:
+             n: The number of examples for which to draw attributes.
+         Returns:
+             x: nxd matrix of non-sensitive feature vectors
+             s: n-dimensional vector of sensitive attributes
+         """
         return self._sample_train_dataset_core(n_train, get_random(seed) if seed else get_random())
 
 
@@ -74,14 +78,14 @@ class GenerativeDistribution(BaseDistribution):
         raise NotImplementedError("Subclass must override sample_features(self, n).")
 
     def _sample_labels(self, x, s, random):
-        """
-        Draws a n-dimensional ground truth vector.
-        Args:
-            x: nxd matrix of non-sensitive feature vectors
-            s: n-dimensional vector of sensitive attributes
-        Returns:
-            y: n-dimensional ground truth vector
-        """
+     """
+    Draws a n-dimensional ground truth vector.
+    Args:
+        x: nxd matrix of non-sensitive feature vectors
+        s: n-dimensional vector of sensitive attributes
+    Returns:
+        y: n-dimensional ground truth vector
+    """
         raise NotImplementedError("Subclass must override sample_labels(self, x, s).")
 
     def _sample_train_dataset_core(self, n_train, random):
@@ -94,39 +98,13 @@ class GenerativeDistribution(BaseDistribution):
         return self.sample_train_dataset(n_test)
 
 
-class SplitDistribution(GenerativeDistribution):
-    def __init__(self, fraction_protected, bias=False):
-        super(SplitDistribution, self).__init__(fraction_protected=fraction_protected, bias=bias)
-
-    @property
-    def feature_dimension(self):
-        return 2 if self.bias else 1
-
-    def _sample_features(self, n, fraction_protected, random):
-        s = (
-                random.rand(n, 1) < fraction_protected
-        ).astype(int)
-        x = 3.5 * random.randn(n, 1) + 3 * (0.5 - s)
-
-        if self.bias:
-            ones = np.ones((n, 1))
-            x = np.hstack((ones, x))
-
-        return x, s
-
-    def _sample_labels(self, x, s, random):
-        if self.bias:
-            x = x[:, 1]
-
-        yprob = 0.8 * sigmoid(0.6 * (x + 3)) * sigmoid(
-            -5 * (x - 3)
-        ) + sigmoid(x - 5)
-
-        return np.expand_dims(random.binomial(1, yprob), axis=1)
-
-
 class UncalibratedScore(GenerativeDistribution):
-    """An distribution modelling an uncalibrated score."""
+    """An distribution modelling an uncalibrated score from
+    Kilbertus, N., Rodriguez, M. G., Schölkopf, B., Muandet, K., & Valera, I. (2020, June).
+    Fair decisions despite imperfect predictions. In International Conference on Artificial
+    Intelligence and Statistics (pp. 277-287).
+    http://proceedings.mlr.press/v108/kilbertus20a/kilbertus20a.pdf"""
+
 
     @property
     def feature_dimension(self):
@@ -141,7 +119,7 @@ class UncalibratedScore(GenerativeDistribution):
         self.bias = bias
 
     def _pdf(self, x):
-        """Get the probability of repayment."""
+        """Get the probability of repayment. Uncalibrated monotonous function."""
         num = (
                 np.tan(x)
                 + np.tan(self.bound)
@@ -152,10 +130,15 @@ class UncalibratedScore(GenerativeDistribution):
         return num / den
 
     def _sample_features(self, n, fraction_protected, random):
+        """Get senstitive attribute s and non-sentive features x """
+
+        # Get senstitive attribute s from binomial distribution"""
         s = (
                 random.rand(n, 1) < fraction_protected
         ).astype(int)
 
+        # Get non-sensitive attribute x from truncated normal distribution
+        # with mean dependent on sensitive attribute
         shifts = s - 0.5
         x = truncnorm.rvs(
             -self.bound + shifts, self.bound + shifts, loc=-shifts, random_state = random
@@ -176,6 +159,12 @@ class UncalibratedScore(GenerativeDistribution):
 
 
 class FICODistribution(GenerativeDistribution):
+    """FICO dataset imported from Responsibly:
+    Toolkit for Auditing and Mitigating Bias
+    and Fairness of Machine Learning Systems (c) 2018 Shlomi Hod
+    https://docs.responsibly.ai/dataset.html#fico-dataset"""
+
+
     def __init__(self, fraction_protected, bias=False):
         super(FICODistribution, self).__init__(fraction_protected=fraction_protected, bias=bias)
         self.fico_data = build_FICO_dataset()
@@ -186,12 +175,16 @@ class FICODistribution(GenerativeDistribution):
         return 2 if self.bias else 1
 
     def _sample_features(self, n, fraction_protected, random):
+        """sample sensitive-features s and non-sensitive features x """
+
         fico_cdf = self.fico_data["cdf"]
 
+        # getting binary sensitive attributes
         unprotected_cdf = fico_cdf["White"].values
         protected_cdf = fico_cdf["Black"].values
         shifted_scores = (fico_cdf.index.values * 10) + 10
 
+        # Get senstitive attribute s from binomial distribution"""
         s = (
                 random.rand(n, 1) < fraction_protected
         ).astype(int).squeeze()
@@ -205,6 +198,7 @@ class FICODistribution(GenerativeDistribution):
         previous_unprotected_threshold = -1
         previous_protected_threshold = -1
 
+        # Get non-sensitive feature x """
         for score_idx, shifted_score in enumerate(shifted_scores):
             unprotected_threshold = unprotected_cdf[score_idx]
             protected_threshold = protected_cdf[score_idx]
@@ -227,6 +221,8 @@ class FICODistribution(GenerativeDistribution):
         return x, s.reshape(-1, 1)
 
     def _sample_labels(self, x, s, random):
+        """sample ground truth labels y """
+
         if self.bias:
             x = x[:, 1]
 
@@ -256,162 +252,3 @@ class FICODistribution(GenerativeDistribution):
 
         return y.reshape(-1, 1)
 
-
-class ResamplingDistribution(BaseDistribution):
-    """Resample from a finite dataset."""
-
-    def _load_data(self):
-        raise NotImplementedError("Subclass must override _load_data(self).")
-
-    def __init__(self, test_percentage, bias=False):
-        super(ResamplingDistribution, self).__init__(bias)
-        x, s, y = self._load_data()
-        self.x, self.x_test, self.y, self.y_test, self.s, self.s_test = train_test_split(x, y, s,
-                                                                                         test_size=test_percentage)
-        self.total_test_samples = self.x_test.shape[0]
-        self.test_sample_indices = np.arange(self.total_test_samples)
-
-        self.total_training_samples = self.x.shape[0]
-        self.training_sample_indices = np.arange(self.total_training_samples)
-
-        if self.bias:
-            self.x = np.hstack([np.ones([self.total_training_samples, 1]), self.x])
-            self.x_test = np.hstack(
-                [np.ones([self.x_test.shape[0], 1]), self.x_test]
-            )
-        self.feature_dim = self.x.shape[1]
-
-    @property
-    def feature_dimension(self):
-        return self.x_test.shape[1]
-
-    def _sample_train_dataset_core(self, n_train, random):
-        n = min(self.total_training_samples, n_train)
-        indices = random.choice(self.training_sample_indices, n, replace=True)
-
-        x = self.x[indices].reshape((n, -1))
-        y = self.y[indices].reshape((n, -1))
-        s = self.s[indices].reshape((n, -1))
-
-        # n_train_remain = max(n_train - self.total_training_samples, 0)
-        # while n_train_remain > 0:
-        #     n = min(self.total_training_samples, n_train_remain)
-        #     indices = random.choice(self.training_sample_indices, n, replace=True)
-        #
-        #     x = np.vstack((x, self.x[indices].reshape((n, -1))))
-        #     y = np.vstack((y, self.y[indices].reshape((n, -1))))
-        #     s = np.vstack((s, self.s[indices].reshape((n, -1))))
-        #
-        #     n_train_remain = max(n_train_remain - self.total_training_samples, 0)
-
-        return x, s, y
-
-    def _sample_test_dataset_core(self, n_test, random):
-        n = min(self.total_test_samples, n_test) if n_test is not None else self.total_test_samples
-        indices = random.choice(self.test_sample_indices, n, replace=True)
-
-        x = self.x_test[indices].reshape((n, -1))
-        y = self.y_test[indices].reshape((n, -1))
-        s = self.s_test[indices].reshape((n, -1))
-
-        return x, s, y
-
-
-class COMPASDistribution(ResamplingDistribution):
-    def __init__(self, test_percentage, bias=False):
-        super(COMPASDistribution, self).__init__(test_percentage, bias)
-
-    def _load_data(self):
-        compas_data = COMPASDataset()
-
-        # use race as the sensitive attribute
-        race = compas_data.df['race']
-        s = race.where(race == 'Caucasian', 1)
-        s.where(s == 1, 0, inplace=True)
-        s = s.values.reshape(-1, 1)
-
-        # Use juvenile felonies, juvenile misdemeanors, juvenile others, prior conviction
-        x = compas_data.df[['juv_fel_count', 'juv_misd_count', 'juv_other_count', 'priors_count']].values
-
-        # Charge Degree categories in one hot encoding
-        for category in compas_data.df['c_charge_degree'].unique():
-            degree_category = compas_data.df['c_charge_degree'].where(compas_data.df['c_charge_degree'] == category, 0)
-            degree_category.where(degree_category == 0, 1, inplace=True)
-            x = np.hstack((x, degree_category.values.reshape(-1, 1)))
-
-        # use actual recidivisim as target variable
-        y = compas_data.df[compas_data.target].values.reshape(-1, 1)
-
-        return x.astype(float), s.astype(float), y.astype(float)
-
-
-class AdultCreditDistribution(ResamplingDistribution):
-    def __init__(self, test_percentage, bias=False):
-        super(AdultCreditDistribution, self).__init__(test_percentage, bias)
-
-    def _load_data(self):
-        data = AdultDataset()
-
-        print('length Adult', len(data))
-
-        # use race as the sensitive attribute
-        race = data.df['race']
-        s = race.where(race == 'White', 1)
-        s.where(s == 1, 0, inplace=True)
-        s = s.values.reshape(-1, 1)
-
-        # Use capital gain/capital loss and hours per week
-        x = whiten(data=data.df[['capital_gain', 'capital_loss', 'hours_per_week']].values.astype(float))
-
-        # work class, education, marital status and native country in one hot encoding
-        for column in ["workclass", "education", "marital_status", "native_country"]:
-            for category in data.df[column].unique():
-                category = data.df[column].where(data.df[column] == category, 0)
-                category.where(category == 0, 1, inplace=True)
-                x = np.hstack((x, category.values.reshape(-1, 1)))
-
-        # use actual income as target variable: >50K = 1, <=50K = 0
-        income = data.df[data.target]
-        y = income.where(income == '>50K', 0)
-        y.where(y == 0, 1, inplace=True)
-        y = y.values.reshape(-1, 1)
-
-        return x.astype(float), s.astype(float), y.astype(float)
-
-
-class GermanCreditDistribution(ResamplingDistribution):
-    def __init__(self, test_percentage, bias=False):
-        super(GermanCreditDistribution, self).__init__(test_percentage, bias)
-
-    def _load_data(self):
-        data = GermanDataset()
-
-        # use sex as the sensitive attribute (columns status and sex are switched)
-        sex = data.df['status'].iloc[:, 0]
-        s = sex.where(sex == 'male', 1)
-        s.where(s == 1, 0, inplace=True)
-        s = s.values.reshape(-1, 1)
-
-        # Use credit amount, installment rate, time in present residence, number of existing credits, number of people
-        # liable for and whether or not person is a foreign worker
-        x = whiten(data.df[['credit_amount',
-                            'installment_rate',
-                            'present_residence_since',
-                            'number_of_existing_credits',
-                            'number_of_people_liable_for']].values.astype(float))
-
-        # credit history, purpose of credit, savings, length of current employment, property, housing situation
-        # and current job type in one hot encoding
-        for column in ["credit_history", "purpose", "savings", "present_employment", "property", "housing", "job"]:
-            for category in data.df[column].unique():
-                category = data.df[column].where(data.df[column] == category, 0)
-                category.where(category == 0, 1, inplace=True)
-                x = np.hstack((x, category.values.reshape(-1, 1)))
-
-        # was given credit good or bad
-        credit = data.df[data.target]
-        y = credit.where(credit == 'good', 0)
-        y.where(y == 0, 1, inplace=True)
-        y = y.values.reshape(-1, 1)
-
-        return x.astype(float), s.astype(float), y.astype(float)

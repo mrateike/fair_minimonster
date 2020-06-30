@@ -6,12 +6,10 @@ import numpy as np
 import pandas as pd
 import pickle
 import scipy.optimize as opt
-from sklearn.dummy import DummyClassifier
 from time import time
-from src.fairlearn.reductions._moments.conditional_selection_rate import DemographicParity
 
-from ._constants import _PRECISION, _INDENTATION, _LINE
-from src.fairlearn.reductions._bechavod.classifier_family import ClassifierFamily
+from ._constants import _PRECISION
+from src.fairlearn.reductions.classifier_family import ClassifierFamily
 
 logger = logging.getLogger(__name__)
 import copy
@@ -43,38 +41,25 @@ class _Lagrangian:
     def __init__(self, dataset1, estimator, constraints, eps, B, X=None, sensitive_features=None, y_loss=None):
         opt_lambda = True
 
-        # XA, L, A
-        self._dataset1 = dataset1
 
+        self._dataset1 = dataset1
         self.X_all = dataset1.loc[:,['features','sensitive_features']]
         _loss1 = dataset1.loc[:, ['l0','l1']]
         _y1 = dataset1.loc[:,['label']]
         _sensitive_features1 = dataset1.loc[:,['sensitive_features']]
 
-
         self.constraints = constraints
         self.constraints.load_data1(self.X_all, _y1, sensitive_features=_sensitive_features1)
-
 
         self.obj = self.constraints.default_objective()
         self.obj.load_data1(self.X_all, _loss1)
 
         if X is not None and sensitive_features is not None and y_loss is not None:
-
             self.X_all = pd.concat([self.X_all, X], axis = 0, ignore_index=True)
-
             y_loss2 = copy.deepcopy(y_loss)
-
-            # if type(constraints) is DemographicParity:
             self.constraints.load_data(X, y_loss, sensitive_features=sensitive_features)
-
             self.obj.load_data(X, y_loss2)
 
-            #self.n2 = self.X.shape[0]
-
-
-
-        # self.classifier_family.load()
 
         self.hsH = pd.Series()
         self.errorsH = pd.Series()
@@ -181,37 +166,14 @@ class _Lagrangian:
 
     def _call_oracle(self, lambda_vec):
 
-        # without fair learning h
-        #signed_weights = self.obj.signed_weights()
-        # fair learning h
-
-        # print('err_C:', self.obj.signed_weights())
-        # print('gamma_C: ', self.constraints.signed_weights(lambda_vec))
-
         signed_weights = self.obj.signed_weights() + self.constraints.signed_weights(lambda_vec)
         redY = 1 * (signed_weights > 0)
         redW = signed_weights.abs()
 
-        # Origignal was imposing n as a parameter for reweighting?
 
-        if redW.sum() == 0:
-            a=1
-            # print('')
-            # print('lambda_vec', lambda_vec)
-            # print('signed_weights', signed_weights)
-            # print('ERROR Lagrangian division by zero')
-        else:
+        if redW.sum() > 0:
+            # otherwise: division by 0
             redW = redY.shape[0] * redW / redW.sum()
-        # print('call oracle: redY.shape[0]', redY.shape[0])
-
-        # redY_unique = np.unique(redY)
-        # classifier = None
-        # if len(redY_unique) == 1:
-        #     # logger.debug("redY had single value. Using DummyClassifier")
-        #     classifier = DummyClassifier(strategy='constant',
-        #                                  constant=redY_unique[0])
-        #     self.n_oracle_calls_dummy_returned += 1
-        # else:
 
 
         if len(np.unique(redY))>1:

@@ -5,9 +5,6 @@ _PRECISION = 1e-8
 _LINE = "_" * 9
 _INDENTATION = " " * 9
 
-
-# Explicit optimization parameters of ExponentiatedGradient
-
 # A multiplier controlling the automatic setting of nu.
 _ACCURACY_MUL = 0.5
 

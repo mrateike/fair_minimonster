@@ -2,10 +2,9 @@
 # Licensed under the MIT License.
 
 import pandas as pd
-import numpy as np
 from .moment import ClassificationMoment
 from .moment import _GROUP_ID, _LABEL, _PREDICTION, _ALL, _EVENT, _SIGN
-from src.fairlearn._input_validation import _MESSAGE_RATIO_NOT_IN_RANGE, _KW_SENSITIVE_FEATURES
+from archive._input_validation import _MESSAGE_RATIO_NOT_IN_RANGE, _KW_SENSITIVE_FEATURES
 from .error_rate import ErrorRate
 
 

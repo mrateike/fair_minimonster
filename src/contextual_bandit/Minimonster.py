@@ -1,106 +1,101 @@
-import time
-from pathlib import Path
-import matplotlib as mpl
 # mpl.use('Qt5Agg')
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from src.contextual_bandit import Argmin
-from src.evaluation.Evaluation import Evaluation, my_plot, get_average_regret
-from src.evaluation.training_evaluation import Statistics
+from src.evaluation.Evaluation import Evaluation
 from data.util import save_dictionary
-from src.evaluation.training_evaluation import UTILITY
 import math
-import time
-
 
 import os
 
-my_path = os.path.abspath(__file__)  # Figures out the absolute path for you in case your working directory moves around.
+my_path = os.path.abspath(__file__)  # absolute path
+
+"""
+Implementation adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
+This is the main algorithm Minimonster (coordinate descent) from 
+Agarwal, A., Hsu, D., Kale, S., Langford, J., Li, L., & Schapire, R. (2014). 
+Taming the monster: A fast and simple algorithm for contextual bandits. 
+In International Conference on Machine Learning (pp. 1638-1646).
+"""
 
 
-class MiniMonster(object):
-    """
-    Implementation of MiniMonster with a scikit_learn learning algorithm as the AMO.
-    """
+
+class FairMiniMonster(object):
+    """A contextualbandit algorithm which implements the fair contextual bandit algorithm,
+        described in detail by
+        Bechavod, Y., Ligett, K., Roth, A., Waggoner, B., & Wu, S. Z. (2019).
+        Equal opportunity in online classification with partial feedback.
+        In Advances in Neural Information Processing Systems (pp. 8974-8984).
+
+
+        Parameters
+        ----------
+
+        constraints : fairlearn.reductions.Moment
+            The disparity constraints expressed as moments
+        eps : float
+            Allowed fairness constraint violation; the solution is guaranteed to
+            have the error within :code:`2*best_gap` of the best error under
+            constraint `eps`; the constraint violation is at most
+            :code:`2*(eps+best_gap)`
+        max_iter : int
+            Maximum number of iterations
+        nu : float
+            Convergence threshold for the duality gap, corresponding to a
+            conservative automatic setting based on the statistical uncertainty
+            in measuring classification error
+        eta_0 : float
+            Initial setting of the learning rate
+        run_linprog_step : bool
+            if True each step of exponentiated gradient is followed by the saddle
+            point optimization over the convex hull of classifiers returned so
+            far; default True
+        """
 
     def __init__(self, B, fairness, eps, nu, TT, seed, path, mu, num_iterations):
+        """
+        Initialization of Minimonster algorithm
+        Args:
+                B: simulator object for access to datasets
+
+                fafairleanirness: type of fairness to optimize for
+                eps: fairness constraint slack variable (relaxation parameter)
+                nu:
+                TT:
+                seed: random seed (int)
+                path:
+                mu:
+                num_iterations:
+
+        """
+
         self.B = B
-        # XA, L, A, Y
-        # self.dataset1 = dataset1
-        # self.dataset2 = dataset2.drop(['l0', 'l1'], axis=1)
         self.num_iterations = num_iterations
-
-
-
         self.seed = seed
-        # loss_path = "{}/loss_policies_results".format(path)
-        # Path(loss_path).mkdir(parents=True, exist_ok=True)
-        # loss_path = "{}/loss_".format(loss_path)
-
-        # var_path = "{}/var_policies_results".format(path)
-        # Path(var_path).mkdir(parents=True, exist_ok=True)
-        # var_path = "{}/var_".format(var_path)
-
-        # dec_path = "{}/bandit_decions_results".format(path)
-        # Path(dec_path).mkdir(parents=True, exist_ok=True)
-
-
-        # self.process_path = "{}/bandit_regret_results".format(path)
-        # Path(self.process_path).mkdir(parents=True, exist_ok=True)
-
-        # self.regret_path = "{}/bandit_regret_results".format(path)
-        # Path(self.regret_path).mkdir(parents=True, exist_ok=True)
-        #
-        # self.statistics_loss = Evaluation(TT, test_seed, loss_path, B, x_label)
-        # self.statistics_var = Evaluation(TT, test_seed, var_path, B, x_label)
-
-        x_label = 'individuals'
-
-        dec_path = "{}/bandit_".format(path)
-        test_seed = 45*seed
-
-        self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B, x_label)
-
-        self.varOracle_time_list = []
-        self.num_varOracle_calls = 0
-        self.num_lossOracle_calls = 0
-        self.path = path
-
-        self.mu = mu
-
-        # XA, L, A (supervised)
-
-        # print('history', self.history)
         self.mu = 0.1
         self.fairness = fairness
-
         self.eps = eps
         self.nu = nu
+        self.path = path
+        self.mu = mu
 
-        self.DP_dict = {}
-        self.TPR_dict = {}
-        self.FPR_dict = {}
-        self.EO_dict = {}
-        self.auc_dict = {}
-        self.mean_pred_dict = {}
-        self.lossOracle_time_list = []
-        self.list_num_policies_added = []
-        self.list_cum_loss_total_time = []
-        self.best_loss_t = []
-        self.loop_time_list = []
-        self.num_update_Q = 0
+        x_label = 'individuals'
+        dec_path = "{}/bandit_".format(path)
+
+        # get random test seed
+        test_seed = 45*seed
+
+        # initialize a statistics object for evaluation of pi
+        self.statistics_decisions = Evaluation(TT, test_seed, dec_path, B, x_label)
 
 
 
 
-    # def fit(self, T2, T1, batch, batchsize):
     def fit(self, dataset, alpha, batch, batchsize):
         self.real_loss = []
-        # best_loss_t = []
 
 
-        # loss_history = pd.DataFrame()
+
 
         T = dataset.shape[0]
         T1 = int(round(T ** (2 * alpha),0))
@@ -118,9 +113,7 @@ class MiniMonster(object):
         self.randomthresholds2 = rand2.rand(len(self.statistics_decisions.XA_test))
 
 
-        # print('RAND THRESHOLDS', self.randomthresholds)
 
-        # ------------- batch settings
         training_points = []
         m = 1
         if batch == "exp":
@@ -146,7 +139,6 @@ class MiniMonster(object):
                     break
 
         elif batch == 'none':
-            # need to collect a few first such that we do not get a label problem
             m = 1
             while True:
                 training_points.append(int(m))
@@ -156,21 +148,17 @@ class MiniMonster(object):
         else:
             print('ERROR in batches')
 
-        # print('training_points', training_points)
 
         # ----------- run loop --------------
 
         history = dataset.iloc[:T1]
-        # print('history', history)
 
 
         #----IPS & non IPS Regret
         self.real_loss.extend(history.loc[:,'l1'].tolist())
 
-
         scores=pd.Series(np.ones(len(self.statistics_decisions.y_test)))
         self.statistics_decisions.evaluate_scores(scores)
-
 
         # for _solve_Opt
         psi = 4*(math.e -2)*np.log(T)
@@ -182,18 +170,13 @@ class MiniMonster(object):
 
             if m == 0:
                 batchsize = 0
-            # print('update: m', m, 't', t, 'batchsize', batchsize)
+
             Q, best_pi = self.update(history, T1, psi, batchsize, m)
 
             if t == T2:
                 break
 
 
-
-            # print('time t ', t)
-            # print('batch m ', m)
-            # print('training_points ', training_points)
-            # print('T2', T2)
 
             if m < len(training_points):
                 batchpoint = training_points[m]
@@ -203,14 +186,13 @@ class MiniMonster(object):
                 batchpoint = T2
 
             individual = dataset.iloc[(T1+t):(T1+batchpoint)]
-            # print('individual', individual)
 
             t = batchpoint
 
 
             xa = individual.loc[:,['features', 'sensitive_features']]
 
-            # print('sample: m', m, 't', t, 'xa', xa)
+
             d, p = self.sample(xa, Q, best_pi, m)
             p = pd.DataFrame(p, index=individual.index)
             y = individual.loc[:,'label']
@@ -221,9 +203,7 @@ class MiniMonster(object):
 
             ips_loss = pd.DataFrame(lip, index=l.index)
 
-            # --- IPS Regret ----
-            # self.real_loss.extend(ips_loss.lookup(ips_loss.index, d).tolist())
-            # --- non IPS Regret
+
             self.real_loss.extend(l.lookup(l.index, d).tolist())
 
             ips_loss = ips_loss.rename(columns={0:'l0', 1:'l1'})
@@ -240,10 +220,10 @@ class MiniMonster(object):
 
         # ------- end of fitting -----------
 
-        print('x-axis', self.x_axis)
-        print('ACC', self.statistics_decisions.ACC_list)
-        print('DP', self.statistics_decisions.DP_list)
-        print('TPR', self.statistics_decisions.TPR_list)
+        # print('x-axis', self.x_axis)
+        # print('ACC', self.statistics_decisions.ACC_list)
+        # print('DP', self.statistics_decisions.DP_list)
+        # print('TPR', self.statistics_decisions.TPR_list)
         data_decisions = {'ACC': self.statistics_decisions.ACC_list, \
                      'DP': self.statistics_decisions.DP_list, \
                      'TPR': self.statistics_decisions.TPR_list,
@@ -282,72 +262,20 @@ class MiniMonster(object):
         reg0_dict = {}
         reg0_dict['regt_cum'] = reg.tolist()
         reg0_dict['regT_cum'] = regT.tolist()
-        # reg0_dict['x_axis'] = x_axis
 
         regret_path = "{}/regret.json".format(self.path)
         save_dictionary(reg0_dict, regret_path)
 
         x_axis = [0]
         x_axis.extend(training_points)
-        # print('training_points')
         x_axis = np.array(x_axis) + T1
         x_axis = x_axis.tolist()
         if training_points[-1] < T2:
             x_axis.extend([T])
 
 
-
         # --- end of fit -------
-        # cum_loop_time = np.cumsum(self.loop_time_list).tolist()
-        # cum_varOracle_time = np.cumsum(self.varOracle_time_list).tolist()
 
-        # process_data = {}
-        # process_data['cum-loop-time'] = cum_loop_time
-        # process_data['cum-varOracle-time'] = cum_varOracle_time
-        # print('loop_time_list', loop_time_list)
-        # process_data['list-loop-time'] = self.loop_time_list
-        # process_data['cum-lossOracle-time'] = cum_lossOracle_time.tolist()
-        # print('self.lossOracle_time_list', self.lossOracle_time_list)
-        # process_data['list-lossOracle-time'] = self.lossOracle_time_list
-        # print('self.varOracle_time_list', self.varOracle_time_list)
-        # process_data['list-varOracle-time'] = self.varOracle_time_list
-        # process_data['list_cum_loss_total_time'] = self.list_cum_loss_total_time
-
-        # print('num_lossOracle_calls', self.num_lossOracle_calls)
-        # print('self.num_varOracle_calls', self.num_varOracle_calls)
-        # print('self.list_num_policies_added', self.list_num_policies_added)
-        # print('training points', training_points)
-
-        # process_data['num_lossOracle_calls'] = self.num_lossOracle_calls
-        # process_data['num_varOracle_calls'] = self.num_varOracle_calls
-        # process_data['num_var_policies added'] = self.list_num_policies_added
-        #
-        # process_path = "{}/process_measures.json".format(self.process_path)
-        # save_dictionary(process_data, process_path)
-
-
-
-
-        # print('x_axis length', len(x_axis ))
-        # print('x_axis', x_axis)
-        # print('self.num_update_Q', self.num_update_Q )
-
-        # plot_dict = {}
-        # plot_dict['x_axis_time'] = x_axis
-        # plot_dict['x_axis_reg'] = timesteps
-        # plot_dict['x_label'] = 'individuals'
-        # plot_dict['y_label0'] = 'update-Q time / update'
-        # plot_dict['y_label1'] = 'process IPS Reg_t0'
-        # plot_dict['y_label2'] = 'in loop: cum varOracle_time / update'
-        # plot_dict['y_label3'] = 'hindsight IPS Reg_T0'
-        # plot_dict['square'] = 'NO'
-        # plot_dict['process'] = 'YES'
-        # plot_dict['evaluation'] = 'NO'
-        # process_path = "{}/process_".format(self.process_path)
-        #
-        # my_plot(process_path, plot_dict, cum_loop_time, \
-        #         reg, cum_varOracle_time, regT)
-        #
 
 
     def update(self, history, T1, psi, batch_size, m):
@@ -364,28 +292,13 @@ class MiniMonster(object):
         batch_best_decisions = pd.Series(batch_best_decisions).astype(int)
 
 
-
-
-        # --- IPS regret
-        # df = batch.loc[:, ['l0', 'l1']]
-        # df.columns = range(df.shape[1])
-        # self.best_loss_t.extend(df.lookup(df.index, batch_best_decisions).tolist())
-        # --- non IPS regret
         y = batch.loc[:, 'label']
 
         l = self.B.get_loss(batch_best_decisions, y)
         self.best_loss_t.extend(l.lookup(l.index, batch_best_decisions).tolist())
 
 
-        # print('--- EVALUATION -- batch update ', m, 'best_policy')
-        # self.statistics_loss.evaluate(best_pi.model, self.x_axis)
-
-        # start = time.time()
         Q = self._solve_op(history, T1, m, best_pi, psi)
-        # stop = time.time()
-        # loop_time = np.array([stop - start])
-        # self.num_update_Q +=1
-        # self.loop_time_list.append(loop_time[0])
 
 
         return Q, best_pi
@@ -434,9 +347,7 @@ class MiniMonster(object):
         dect = dect.squeeze()
 
         scores_test = pd.Series(dect)
-        # print('--- EVALUATION -- learners decision making')
-        # print('scores_test', scores_test)
-        # print('self.x_axis', self.x_axis)
+
         self.statistics_decisions.evaluate_scores(scores_test)
 
         return dec, pdec
@@ -447,31 +358,32 @@ class MiniMonster(object):
         """
         # a = 1.0/(4)
         # b = np.sqrt(np.log(16.0*(self.t**2)*self.B.N/self.delta)/float(4*self.t))
+
+
         a = self.mu
-        # print('t', t)
         if t == 0:
             b = np.inf
         else:
             b = self.mu * np.sqrt(2) / np.sqrt(t)
         c = np.min([a, b])
         return np.min([1, c])
-        # return 0.1
+
 
     def _solve_op(self, H, T1, m, best_pi, psi, Q=None):
 
         """
         Main optimization logic for MiniMonster.
         """
-        # print('----- BEGIN SOLVE OP ----------')
+
         num_policies_added = 0
-        # pi_var_total_time = 0
+
 
         mu = self._get_mu(m)
 
         t = H.shape[0]
 
-        # Todo: implement warm start option
-        Q = []  ## self.weights
+
+        Q = []  ## warm start: self.weights
 
         predictions = {}
         q_losses = {}
@@ -508,13 +420,11 @@ class MiniMonster(object):
 
             loss = H.loc[:,['l0', 'l1']].to_numpy()
 
-            # -bt:
+
             reg = loss - leader_loss
             reg[reg < 0] = 0
             bt = reg / (t * psi * mu)
 
-            # -l:
-            # bt = loss
 
             _H = H.loc[:, ['features', 'sensitive_features', 'label']]
 
@@ -526,14 +436,9 @@ class MiniMonster(object):
 
             Dpimin_dataset1 = Dpimin_dataset.iloc[0:T1,:]
             Dpimin_dataset2 = Dpimin_dataset.iloc[T1:,:].drop(columns=['label'])
-            # print('Dpimin_dataset1', Dpimin_dataset1)
-            # print('Dpimin_dataset2', Dpimin_dataset2)
 
-            # start = time.time()
+
             pi = Argmin.argmin(self.randomthresholds, self.eps, self.nu, self.fairness, Dpimin_dataset1, Dpimin_dataset2)
-            # stop = time.time()
-            # pi_var_total_time = pi_var_total_time + np.array([stop - start])[0]
-            # self.num_varOracle_calls += 1
 
             if pi not in q_losses.keys():
                 pi_loss, _ = self.get_cum_loss(H, pi, predictions)
@@ -544,9 +449,9 @@ class MiniMonster(object):
 
             Dpi, _ = self.get_cum_loss(Dpinormal_dataset, pi, predictions)
 
-            # -bt:
+
             Dpi = Dpi - 4
-            # l: Dpi = Dpi - ( 4 + leader_loss)
+
 
             if Dpi > 0:
                 loss3 = pd.DataFrame(v, columns=['l0', 'l1'], index=H.index)
@@ -563,21 +468,18 @@ class MiniMonster(object):
                 num_policies_added +=1
 
             else:
-                # print('----- END SOLVE OP naturally ----------')
-                # self.varOracle_time_list.append(pi_var_total_time)
                 self.list_num_policies_added.append(num_policies_added)
                 return Q
 
         # print('----- END SOLVE OP ----------')
-        # self.varOracle_time_list.append(pi_var_total_time)
         self.list_num_policies_added.append(num_policies_added)
+
         return Q
 
     def get_cum_loss(self, dataset, pi, predictions):
         # H: DF, best_pi: Policy, pred: dict, t:int, feat:DF
 
         if pi not in predictions.keys():
-            # Todo FIX THIS: danger with other datasets selecting only first two columns
             values = pi.get_all_decisions(dataset.loc[:, ['features', 'sensitive_features']])
             predictions[pi] = values
 
