@@ -14,8 +14,11 @@ my_path = os.path.abspath(__file__)  # absolute path
 Implementation adapted from akshaykr (https://github.com/akshaykr/oracle_cb)
 This is the main algorithm Minimonster (coordinate descent) from 
 Agarwal, et al. (2014).  Taming the monster: A fast and simple algorithm for contextual bandits. 
-In International Conference on Machine Learning (pp. 1638-1646).
-Adapted for the fair contextual bandit approach by 
+adapted to implement the algorithm by
+Bechavod, Y., Ligett, K., Roth, A., Waggoner, B., & Wu, S. Z. (2019). 
+Equal opportunity in online classification with partial feedback.
+https://arxiv.org/pdf/1902.02242.pdf
+
 
 """
 

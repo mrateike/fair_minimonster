@@ -23,7 +23,11 @@ import argparse
 from pathlib import Path
 
 """
-This is the main function for the fair minimonster algorithm
+This is the main function for the fair minimonster algorithm from the paper 
+Bechavod, Y., Ligett, K., Roth, A., Waggoner, B., & Wu, S. Z. (2019). 
+Equal opportunity in online classification with partial feedback.
+https://arxiv.org/pdf/1902.02242.pdf
+
 
 --- parameters ----
     T: int  

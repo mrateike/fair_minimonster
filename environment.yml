@@ -1,4 +1,4 @@
-name: fairlearn_original
+name: fair_minimonster
 channels:
   - defaults
 dependencies:
