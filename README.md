@@ -1,6 +1,6 @@
 This repository contains an implementation of the paper Bechavod, Y., Ligett, K., Roth, A., Waggoner, B., & Wu, S. Z. (2019).
 Equal opportunity in online classification with partial feedback. https://arxiv.org/pdf/1902.02242.pdf
-The repository is self-contained, meaning that it includes the list of dependencies, code, and datasets needed to run the experiments of the paper.
+The repository is self-contained, i.e. it includes all dependencies, code, and datasets needed to run the experiments of the paper.
 
 # How to run the code
 
