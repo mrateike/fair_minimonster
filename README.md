@@ -36,7 +36,7 @@ of the fair oracle of 0.01 fixing an arbitrary seed 7 and save results in a fold
 python main.py -T 1032 -a 0.25 -s 7 -bt lin -bs 10 -i 10 -f DP -beta 0.1 -nu 1e-6 -mu 0.1 -d FICO -p /results
 ```
 
-Here is the output of the argument ''--help':
+Here is the output of the argument '--help':
 
 ```
   -h, --help            show this help message and exit
