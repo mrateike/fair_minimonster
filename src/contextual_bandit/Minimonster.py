@@ -551,6 +551,7 @@ class FairMiniMonster(object):
                 self.list_num_policies_added.append(num_policies_added)
                 return Q
 
+
         # end algorithm, when maximum number of loops reached
         self.list_num_policies_added.append(num_policies_added)
         return Q
