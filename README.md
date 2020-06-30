@@ -30,10 +30,10 @@ parity (DP) and a fairness relaxation eps=0.1, with a total number of T=1032 dat
 alpha = 0.25, such that we obtain a phase 1 dataset of size T1 = 32 and a
  phase 2 dataset of size T2 = 1000, with a linear batch size of 10 and a maximum number of 10 iterations of the coordinate
 descent algorithm, and a minimum probabilit for the smoothed distribution mu-0.1 and an accuracy
-of the fair oracle of 0.01 and save results in a folder under the path /results, we call
+of the fair oracle of 0.01 fixing an arbitrary seed 7 and save results in a folder under the path /results, we call
 
 ```
-python main.py -T 1032 -a 0.4 -s 1 -bt lin -bs 10 -i 3 -f DP -beta 0.1 -nu 1e-6 -mu 0.1 -d FICO -p /results
+python main.py -T 1032 -a 0.25 -s 7 -bt lin -bs 10 -i 10 -f DP -beta 0.1 -nu 1e-6 -mu 0.1 -d FICO -p /results
 ```
 
 Here is the output of the argument ''--help':
