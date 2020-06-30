@@ -65,27 +65,27 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-T', '--total_data', nargs='+', type=int, required=True,
-                        help='list of total data s to be used')
+                        help='total amount of data T to be used (phase 1 and 2) ')
     parser.add_argument('-a', '--alpha', type=float, nargs='+', required=True,
-                        help='phase 1 phase 2 data split parameter')
+                        help='phase 1 phase 2 data split parameter, value between 0.25 and 0.5')
     parser.add_argument('-s', '--seeds', type=int, nargs='+', required=False,
-                        help='seeds for phase 1, 2, testing', default=967)
+                        help='number to fix seeds for phase 1, 2, testing', default=11)
     parser.add_argument('-f', '--fairness_type', type=str, nargs='+', required=True,
-                        help="select the type of fairness (DP, EO)")
+                        help="type of fairness (DP, EO)")
     parser.add_argument('-bt', '--batch_type', type=str, nargs='+', required=True,
-                        help='batches type used (no_batch, exp, lin, warm_start)')
+                        help='batches type used (no_batch, exp, lin)')
     parser.add_argument('-bs', '--batch_size', type=str, nargs='+', required=False, default=1,
-                        help='batches size used for lin (required) otherwise 1')
-    parser.add_argument('-eps', '--eps', type=float, nargs='+', required=True,
-                        help="list of statistical unfairness paramenters (beta) to be used")
+                        help='batch size for lin otherwise set to 1')
+    parser.add_argument('-beta', '--beta', type=float, nargs='+', required=True,
+                        help="fairness relaxation parameter (unfairness) paramenter beta")
     parser.add_argument('-nu', '--nu', type=float, nargs='+', required=True,
-                        help="list of accuracy parameters of the oracle to be used")
+                        help="accuracy parameter of the fair oracle")
     parser.add_argument('-mu', '--mu', type=float, nargs='+', required=True,
-                        help="minimum probability for simulating the bandit")
+                        help="minimum probability for smoothening distribution Q")
     parser.add_argument('-d', '--data', type=str, nargs='+', required=True,
-                        help="select the distribution (FICO, Uncalibrated)")
+                        help="distribution (FICO, Uncalibrated)")
     parser.add_argument('-i', '--iterations', type=str, nargs='+', required=True,
-                        help="number of iterations of the bandit coordinate decent algo")
+                        help="number of iterations of the bandit coordinate decent algorithm")
     parser.add_argument('-p', '--path', type=str, required=False, help="save path for the results")
 
     args = parser.parse_args()
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     fairness = args.fairness_type[0]
     batch = args.batch_type[0]
     batchsize = args.batch_size[0]
-    eps = args.eps[0]
+    beta = args.beta[0]
     nu = args.nu[0]
     dataset = args.data[0]
     seed = args.seeds[0]
@@ -118,7 +118,7 @@ if __name__ == "__main__":
 
     dataset = B.sample_dataset(T, seed)
 
-    M = FairMiniMonster(B, fairness, eps, nu, TT, seed, path, mu, num_iterations)
+    M = FairMiniMonster(B, fairness, beta, nu, TT, seed, path, mu, num_iterations)
 
     print("------------- start fit ---------------")
     start = time.time()
