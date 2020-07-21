@@ -50,11 +50,16 @@ class DatasetBandit(object):
 
 
     def get_loss(self, d, y):
+
         # get transformed loss vector
-        l0 = pd.Series(0.5*np.ones(len(d)), index=y.index)
-        loss = pd.concat([l0,1-y], axis=1)
+        l0 = pd.Series(0.5 * np.ones(len(d)), index=y.index)
+        if type(d) is not np.ndarray:
+            d = d.to_numpy()
+        loss = pd.concat([(1-d)*l0, d*(1-y)], axis=1)
         loss.columns = range(loss.shape[1])
         return loss
+
+
 
 
 
